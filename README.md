@@ -1,13 +1,26 @@
 # SimplesEditor
 
-Descrição breve do projeto.
+SimplesEditor — editor simples para estudos e demonstrações.
 
-Como rodar:
-- Pré-requisitos
-- Comandos
+## Visão geral
+Projeto demonstração com estrutura mínima para permitir colaboração (Sprint 1).
 
-Critérios de aceite:
-- Estrutura mínima pronta
-- README com screenshots/GIFs (substituir placeholders)
+## Como rodar (exemplos)
+- Node.js: 
+  - Instalar Node.js v18+
+  - npm ci
+  - npm start
+- Python (exemplo):
+  - python -m pip install -r requirements.txt
+  - python main.py
 
-Referências: SPRINTS.md
+## Contribuindo
+Veja CONTRIBUTING.md para orientações sobre como abrir issues e PRs.
+
+## Screenshots / GIFs
+Colocar imagens em docs/screenshots/ e substituir os placeholders abaixo.
+
+![placeholder](docs/screenshots/placeholder.png)
+
+## Licença
+MIT
