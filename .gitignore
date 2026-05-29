@@ -1,39 +1,25 @@
-# ===== Ambiente =====
-.env
-.env.local
-.env.*.local
-
-# ===== Node =====
+# Node
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
+npm-debug.log
+package-lock.json
 
-# ===== Build =====
-dist/
-build/
-
-# ===== Python =====
+# Python
 __pycache__/
 *.py[cod]
-*.egg-info/
-.venv/
 venv/
+.venv/
 
-# ===== IDE / Editor =====
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Env
+.env
+.env.local
 
-# ===== OS =====
+# OS
 .DS_Store
 Thumbs.db
 
-# ===== Logs =====
-*.log
-
-# ===== Agentes =====
+# Agent
 .agent/
+
+
+.antigravity
+.agent
