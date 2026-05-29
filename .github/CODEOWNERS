@@ -1,2 +1,6 @@
-# Especifica responsáveis por partes do código (exemplo)
+# CODEOWNERS
+# Define default owners
 * @GrouwBer
+# src owned by team lead
+/src/ @GrouwBer
+/docs/ @GrouwBer
