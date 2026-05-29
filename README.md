@@ -17,6 +17,9 @@ Projeto demonstração com estrutura mínima para permitir colaboração (Sprint
 ## Contribuindo
 Veja CONTRIBUTING.md para orientações sobre como abrir issues e PRs.
 
+## GitHub Project
+O board da Sprint 1, com colunas e automações, está documentado em [docs/github-project-board.md](docs/github-project-board.md).
+
 ## Screenshots / GIFs
 Colocar imagens em docs/screenshots/ e substituir os placeholders abaixo.
 
