@@ -24,3 +24,10 @@ Colocar imagens em docs/screenshots/ e substituir os placeholders abaixo.
 
 ## Licença
 MIT
+
+## Critérios de aceite
+- [ ] O ajuste de infraestrutura "estruturar repositorio no GitHub e README inicial" está concluído e reproduzível no repositório.
+- [ ] Sprint 1 mantém a base do repositório pronta para o restante do time.
+- [ ] O fluxo colaborativo de PR fica exercitado e sem bloqueios.
+- [ ] README.md completo com GIFs/screenshots.
+- [ ] O material final fica pronto para apresentação e revisão da turma.

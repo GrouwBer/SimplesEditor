@@ -11,3 +11,6 @@
 - [ ] Código segue as diretrizes do projeto
 - [ ] Testes adicionados/atualizados
 - [ ] README atualizado quando aplicável
+
+## Critérios de aceite
+Colocar aqui os critérios de aceite relevantes ou linkar para a issue (ex.: #2).
