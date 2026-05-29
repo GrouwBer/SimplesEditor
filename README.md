@@ -31,3 +31,7 @@ MIT
 - [ ] O fluxo colaborativo de PR fica exercitado e sem bloqueios.
 - [ ] README.md completo com GIFs/screenshots.
 - [ ] O material final fica pronto para apresentação e revisão da turma.
+
+## Security
+Do not commit secrets (tokens, passwords). CI checks run on push/PR. Ensure local tests pass before opening a PR.
+
