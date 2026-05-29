@@ -1,17 +1,20 @@
-## O que muda?
-<!-- Resumo de 1-2 frases -->
+## Descrição
 
-## Por quê?
-<!-- Contexto, motivação, link para issue: Closes #N -->
+(Descreva as mudanças e o motivo.)
 
-## Como testar?
-<!-- Passos para o reviewer reproduzir -->
-
-## Screenshots / GIFs
-<!-- Para mudanças de UI -->
+## Tipo de mudança
+- [ ] Bugfix
+- [ ] Feature
+- [ ] Documentação
 
 ## Checklist
-- [ ] Testes passando localmente
-- [ ] Atualizei o README se necessário
-- [ ] Não introduzi breaking changes
-- [ ] CI verde
+- [ ] Código segue as diretrizes do projeto
+- [ ] Testes adicionados/atualizados
+- [ ] README atualizado quando aplicável
+
+## Critérios de aceite
+Colocar aqui os critérios de aceite relevantes ou linkar para a issue (ex.: #2).
+
+## CI
+- Certifique-se que os checks do CI estão verdes antes de pedir merge.
+

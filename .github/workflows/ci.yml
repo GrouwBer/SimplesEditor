@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [ dev, main ]
+  pull_request:
+    branches: [ dev, main ]
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - name: Install/Lint/Test/Audit
+        run: |
+          set -e
+          if [ -f package.json ]; then
+            echo "Node project detected";
+            npm ci;
+            if npm run -s lint; then echo "lint ok"; else echo "no lint or lint failed"; fi;
+            npm test;
+            npm audit --audit-level=high || echo "npm audit found issues";
+          elif [ -f requirements.txt ]; then
+            echo "Python project detected";
+            python -m pip install -r requirements.txt;
+            pytest -q;
+          else
+            echo "No recognized project files found. Running basic checks";
+            test -f README.md || (echo "README.md missing"; exit 1);
+          fi

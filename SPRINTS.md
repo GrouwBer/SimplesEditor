@@ -1,4 +1,7 @@
+# SPRINTS
+
 ## Sprint 1 — Foundation & Auth
+# SPRINTS
 
 **Objetivo**: Estrutura mínima funcional para todos os integrantes começarem a trabalhar em paralelo.
 
@@ -96,3 +99,6 @@
 - [ ]  **(Opcional)** Domínio próprio (`*.edu.br`) apontando pro IP
 - [ ]  Apresentação final preparada (slides ou Notion)
 - [ ]  Retrospectiva da equipe (o que aprendemos)
+## Sprint 1 - Foundation & Auth
+- Estruturar repositório no GitHub e README inicial
+- Exercitar fluxo de PR
