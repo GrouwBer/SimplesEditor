@@ -9,7 +9,7 @@ services:
       - ./nginx/certs:/etc/nginx/certs:ro
     depends_on:
       frontend:
-        condition: service_healthy
+        condition: service_started
       backend:
         condition: service_healthy
     restart: unless-stopped
@@ -25,12 +25,6 @@ services:
       - VITE_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
       - VITE_API_BASE=/api
       - VITE_WS_BASE=/ws
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:80 >/dev/null || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
     restart: unless-stopped
 
   backend:
@@ -53,19 +47,18 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock   # spawn de containers
+      - /var/run/docker.sock:/var/run/docker.sock
       - simples_tmp:/tmp/simples
     depends_on:
       - runner_image_build
     restart: unless-stopped
 
-  # Pseudo-serviço apenas para construir a imagem do sandbox
   runner_image_build:
     image: simples-runner:latest
     build:
       context: ./runner
       dockerfile: Dockerfile
-    command: ["true"]      # sai imediatamente; só queremos a imagem construída
+    command: ["true"]
     restart: "no"
 
 volumes:
