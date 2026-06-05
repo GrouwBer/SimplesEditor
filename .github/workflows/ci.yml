@@ -83,17 +83,15 @@ jobs:
           docker compose -f docker-compose.yml up -d --build
       - name: Wait for health and run smoke checks
         run: |
-          # Wait for backend to be ready (healthcheck inside container)
+          # docker compose waits for backend:healthy before starting nginx
+          # Check frontend is serving HTML through nginx
           for i in $(seq 1 30); do
-            if docker compose exec -T backend curl -sf http://localhost:5000/api/health | grep -q '"status": "ok"'; then
-              echo 'backend ok';
-              break;
+            if curl -sS http://localhost:80 | grep -q "<!DOCTYPE html>"; then
+              echo 'frontend ok';
+              exit 0;
             fi;
             sleep 2;
-            if [ "$i" -eq 30 ]; then
-              echo "healthcheck failed"; exit 1;
-            fi;
           done
-          curl -sS http://localhost:80 | grep -q "<!DOCTYPE html>" || (echo 'frontend not serving HTML' && exit 1)
+          echo "frontend not serving HTML"; exit 1
       - name: Tear down
         run: docker compose down
