@@ -17,6 +17,12 @@ Projeto demonstração com estrutura mínima para permitir colaboração (Sprint
 ## Contribuindo
 Veja CONTRIBUTING.md para orientações sobre como abrir issues e PRs.
 
+## Demo Video
+
+[![Simples Editor Demo](docs/screenshots/placeholder.png)](docs/demo.mp4)
+
+> Roteiro de gravacao disponivel em [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md)
+
 ## Screenshots / GIFs
 Colocar imagens em docs/screenshots/ e substituir os placeholders abaixo.
 
