@@ -31,6 +31,8 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+    ports:
+      - "5000:5000"
     expose:
       - "5000"
     environment:

@@ -83,13 +83,13 @@ jobs:
           docker compose -f docker-compose.yml up -d --build
       - name: Wait for health and run smoke checks
         run: |
-          for i in $(seq 1 60); do
-            if curl -sS http://localhost:80/api/health | grep -q '"status": "ok"'; then
-              echo 'ok';
+          for i in $(seq 1 30); do
+            if curl -sS http://localhost:5000/api/health | grep -q '"status": "ok"'; then
+              echo 'backend ok';
               break;
             fi;
-            sleep 1;
-            if [ "$i" -eq 60 ]; then
+            sleep 2;
+            if [ "$i" -eq 30 ]; then
               echo "healthcheck failed"; exit 1;
             fi;
           done
