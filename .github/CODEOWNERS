@@ -1,6 +1,8 @@
 # CODEOWNERS
 # Define default owners
-* @GrouwBer
-# src owned by team lead
+* @GrouwBer @Jkvzin @JoaoGarciaM
+# Core infrastructure
 /src/ @GrouwBer
 /docs/ @GrouwBer
+/docker-compose.yml @GrouwBer
+/.github/ @GrouwBer
