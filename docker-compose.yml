@@ -28,8 +28,8 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:80 >/dev/null || exit 1"]
       interval: 10s
-      timeout: 10s
-      retries: 12
+      timeout: 5s
+      retries: 5
       start_period: 10s
     restart: unless-stopped
 

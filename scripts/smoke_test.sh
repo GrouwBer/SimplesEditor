@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Run docker compose (prod+dev override is fine for CI dev-like environment)
-docker compose -f docker-compose.yml -f docker-compose.override.yml up -d --build
+# Run docker compose (production)
+docker compose -f docker-compose.yml up -d --build
 
 # Wait for backend health
 for i in {1..60}; do
-  if curl -sS http://localhost:8080/api/health | grep -q '"status": "ok"'; then
+  if curl -sS http://localhost:80/api/health | grep -q '"status": "ok"'; then
     echo "health ok"
     break
   fi
@@ -20,7 +20,7 @@ for i in {1..60}; do
 done
 
 # Basic smoke: homepage
-if curl -sS http://localhost:8080 | grep -q "<!DOCTYPE html>"; then
+if curl -sS http://localhost:80 | grep -q "<!DOCTYPE html>"; then
   echo "frontend ok"
 else
   echo "frontend missing or not serving html"
