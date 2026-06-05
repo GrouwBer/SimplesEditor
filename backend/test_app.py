@@ -14,3 +14,11 @@ def test_health_endpoint(client):
     response = client.get('/api/health')
     assert response.status_code == 200
     assert response.get_json() == {"status": "ok"}
+
+
+def test_metrics_endpoint(client):
+    """Testa se o endpoint /metrics retorna metricas Prometheus."""
+    response = client.get('/metrics')
+    assert response.status_code == 200
+    assert 'simples_executions_total' in response.get_data(as_text=True)
+    assert 'simples_execution_duration_seconds' in response.get_data(as_text=True)
