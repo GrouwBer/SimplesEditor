@@ -1,0 +1,52 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: 'Dominio para deploy'
+        required: false
+        default: 'simples.example.edu.br'
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build images
+        run: docker compose -f docker-compose.yml build
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.ORACLE_HOST }}
+          username: ${{ secrets.ORACLE_USER }}
+          key: ${{ secrets.ORACLE_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/SimplesEditor
+            git pull origin main
+            echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > .env
+            echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
+            echo "SUPABASE_JWT_SECRET=${{ secrets.SUPABASE_JWT_SECRET }}" >> .env
+            docker compose -f docker-compose.yml down --remove-orphans || true
+            docker compose -f docker-compose.yml up -d --build
+            # Aguardar health
+            for i in $(seq 1 30); do
+              if curl -sk https://localhost/api/health | grep -q '"status": "ok"'; then
+                echo "Deploy OK"
+                break
+              fi
+              sleep 2
+            done
