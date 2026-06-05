@@ -62,7 +62,7 @@ jobs:
           pip install flake8
           flake8 . --count --max-line-length=120 --statistics
       - name: Test
-        run: pytest -q
+        run: python -m pytest -q
 
   docker-stack:
     runs-on: ubuntu-latest
