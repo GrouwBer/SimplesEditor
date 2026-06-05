@@ -83,8 +83,9 @@ jobs:
           docker compose -f docker-compose.yml up -d --build
       - name: Wait for health and run smoke checks
         run: |
+          # Wait for backend to be ready (healthcheck inside container)
           for i in $(seq 1 30); do
-            if curl -sS http://localhost:5000/api/health | grep -q '"status": "ok"'; then
+            if docker compose exec -T backend curl -sf http://localhost:5000/api/health | grep -q '"status": "ok"'; then
               echo 'backend ok';
               break;
             fi;
