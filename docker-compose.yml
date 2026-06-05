@@ -3,6 +3,11 @@ services:
   frontend:
     build: ./frontend
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - web
   backend:
@@ -27,7 +32,7 @@ services:
       backend:
         condition: service_healthy
       frontend:
-        condition: service_started
+        condition: service_healthy
     networks:
       - web
 
