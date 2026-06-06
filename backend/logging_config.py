@@ -34,6 +34,18 @@ def setup_logging():
     )
 
 
-def get_logger(name: str = __name__) -> structlog.stdlib.BoundLogger:
-    """Retorna um logger estruturado."""
+def get_logger(name: str | None = None) -> structlog.stdlib.BoundLogger:
+    """
+    Retorna um logger estruturado.
+
+    Se name for None, usa __name__ do frame chamador.
+    """
+    if name is None:
+        import inspect
+        frame = inspect.currentframe()
+        try:
+            caller = frame.f_back
+            name = caller.f_globals.get("__name__", "root")
+        finally:
+            del frame
     return structlog.get_logger(name)
