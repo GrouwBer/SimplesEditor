@@ -39,10 +39,10 @@
 - [x] Métricas Prometheus em /metrics
 - [x] Hard limit Docker configurado
 - [x] Sandbox security (cap-drop, read-only, network=none)
-- [ ] #40 docs(docs): documentar resposta a incidente de sandbox
-- [ ] #38 chore(devops): expor metricas Prometheus em /metrics
-- [ ] #37 chore(devops): adicionar logs estruturados em JSON
-- [ ] #34 chore(devops): configurar hard limit do container
+- [x] #40 docs(docs): documentar resposta a incidente de sandbox
+- [x] #38 chore(devops): expor metricas Prometheus em /metrics
+- [x] #37 chore(devops): adicionar logs estruturados em JSON
+- [x] #34 chore(devops): configurar hard limit do container
 
 ## Sprint 6 — Polish & Deploy
 - [x] #48 docs(docs): registrar retrospectiva da equipe
