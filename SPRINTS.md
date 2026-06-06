@@ -79,7 +79,7 @@
 - [x]  `--cap-drop=ALL`, `--read-only`, `--network=none`, cgroups configurados
 - [ ]  Rate limit (30 execuções/min/user) com `flask-limiter`
 - [x]  Logs estruturados JSON (`structlog`)
-- [ ]  Métricas Prometheus em `/metrics` (interno apenas)
+- [x]  Métricas Prometheus em `/metrics` (interno apenas)
 - [ ]  Audit do sandbox: tentativa de escrever em `/`, fork bomb, network — todas bloqueadas
 - [ ]  Documentação de incidente (`docs/INCIDENTS.md`) — o que fazer se um aluno escapar
 
