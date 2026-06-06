@@ -2,7 +2,7 @@
 
 Plataforma web para ensino de programacao com a linguagem SIMPLES — escreva, compile e execute codigo direto no navegador, sem instalar nada.
 
-![Simples Editor](docs/screenshots/placeholder.png)
+🚧 [EM BREVE] — Screenshots e demo video serao adicionados apos merge dos PRs de documentacao.
 
 ---
 
@@ -14,49 +14,27 @@ Plataforma web para ensino de programacao com a linguagem SIMPLES — escreva, c
 - **Compilador integrado**: `simplesc` traduz SIMPLES → NASM → executavel
 - **Execucao interativa**: programas com `leia` funcionam via WebSocket + PTY
 - **Sandbox seguro**: execucao isolada em container Docker (`--cap-drop=ALL`, `--read-only`, `--network=none`)
-- **CI/CD**: GitHub Actions com 4 jobs paralelos (lint, test, build, smoke)
+- **CI/CD**: GitHub Actions com 4 jobs paralelos (frontend, backend, docker-stack, smoke)
 
 ---
 
 ## Screenshots
 
-### Editor com syntax highlight
-<!-- Substituir por screenshot real: docs/screenshots/editor.png -->
-![Editor](docs/screenshots/placeholder.png)
+> Screenshots reais serao adicionadas apos captura. Consulte os PRs de documentacao para o progresso.
 
-*27 palavras-chave em ciano com negrito, numeros em laranja, strings em amarelo, comentarios em verde italico.*
-
-### Painel NASM
-<!-- Substituir por screenshot real: docs/screenshots/nasm.png -->
-![NASM](docs/screenshots/placeholder.png)
-
-*Saida do compilador `simplesc` exibida no painel direito em tempo real.*
-
-### Terminal interativo com `leia`
-<!-- Substituir por screenshot real: docs/screenshots/terminal.png -->
-![Terminal](docs/screenshots/placeholder.png)
-
-*Terminal xterm.js com comunicacao bidirecional via WebSocket.*
-
-### Tratamento de erros
-<!-- Substituir por screenshot real: docs/screenshots/error.png -->
-![Erro](docs/screenshots/placeholder.png)
-
-*Erros de compilacao exibidos como markers vermelhos no Monaco Editor.*
-
-### CI/CD Pipeline
-<!-- Substituir por screenshot real: docs/screenshots/ci.png -->
-![CI](docs/screenshots/placeholder.png)
-
-*GitHub Actions com 4 jobs paralelos: frontend, backend, docker-stack, smoke.*
+| Cena | Descricao |
+|---|---|
+| 🚧 Editor | Syntax highlight com 27 palavras-chave, numeros, strings, comentarios |
+| 🚧 Painel NASM | Saida do compilador `simplesc` no painel direito |
+| 🚧 Terminal | xterm.js com comunicacao bidirecional via WebSocket (`leia`) |
+| 🚧 Erros | Markers vermelhos no Monaco Editor |
+| 🚧 CI/CD | GitHub Actions: 4 jobs paralelos |
 
 ---
 
 ## Demo Video
 
-[![Simples Editor Demo](docs/screenshots/placeholder.png)](docs/demo.mp4)
-
-> Roteiro de gravacao: [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md)
+🚧 [EM BREVE] — Roteiro de gravacao em [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) (em outro PR).
 
 ---
 
@@ -131,16 +109,21 @@ cd frontend && npm ci && npm run lint && npm test
 
 ## Documentacao
 
-| Documento | Descricao |
-|---|---|
-| [SPRINTS.md](SPRINTS.md) | Planejamento das 6 sprints |
-| [PROGRESS.md](PROGRESS.md) | Checklist de progresso das issues |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Guia de contribuicao |
-| [docs/DEPLOY.md](docs/DEPLOY.md) | Guia de deploy Oracle Cloud Ampere A1 |
-| [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) | Roteiro para video de demonstracao |
-| [docs/APRESENTACAO.md](docs/APRESENTACAO.md) | Roteiro da apresentacao final |
-| [docs/RETROSPECTIVA.md](docs/RETROSPECTIVA.md) | Retrospectiva da equipe |
-| [docs/INSTRUCTIONS_DEV.md](docs/INSTRUCTIONS_DEV.md) | Instrucoes para desenvolvimento |
+| Documento | Descricao | Status |
+|---|---|---|
+| [SPRINTS.md](SPRINTS.md) | Planejamento das 6 sprints | ✅ |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Guia de contribuicao | ✅ |
+| [docs/INSTRUCTIONS_DEV.md](docs/INSTRUCTIONS_DEV.md) | Instrucoes para desenvolvimento | ✅ |
+
+Documentacao em outros PRs (links ficarao ativos apos merge):
+
+| Documento | Descricao | PR |
+|---|---|---|
+| PROGRESS.md | Checklist de progresso das issues | #67 |
+| docs/RETROSPECTIVA.md | Retrospectiva da equipe | #67 |
+| docs/DEPLOY.md | Guia de deploy Oracle Cloud | #69 |
+| docs/DEMO_SCRIPT.md | Roteiro para video de demonstracao | #71 |
+| docs/APRESENTACAO.md | Roteiro da apresentacao final | #68 |
 
 ---
 
@@ -149,7 +132,15 @@ cd frontend && npm ci && npm run lint && npm test
 - **Frontend**: React, TypeScript, Monaco Editor, xterm.js, Vite
 - **Backend**: Python, Flask, flask-sock, gevent, gunicorn, structlog
 - **Infra**: Docker, Docker Compose, Nginx, GitHub Actions
-- **Seguranca**: Supabase Auth, sandbox Docker, rate limiting, Prometheus
+- **Seguranca**: Supabase Auth, sandbox Docker (planejado: rate limiting, Prometheus)
+
+---
+
+## Seguranca
+
+> **Aviso**: Nunca commitar secrets (chaves, tokens, senhas) no repositorio.
+> Use o arquivo `.env` (incluido no `.gitignore`) para variaveis de ambiente locais.
+> Consulte `.env.example` para as variaveis necessarias.
 
 ---
 
