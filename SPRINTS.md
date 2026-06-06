@@ -75,8 +75,8 @@
 
 - [ ]  Botão **Stop** funcional (envia `{type: "stop"}` → SIGTERM → SIGKILL)
 - [ ]  Timeout de execução wall-clock (10s) com `asyncio.wait_for`
-- [ ]  Hard limit Docker (`--stop-timeout=12`)
-- [ ]  `--cap-drop=ALL`, `--read-only`, `--network=none`, cgroups configurados
+- [x]  Hard limit Docker (`--stop-timeout=12`)
+- [x]  `--cap-drop=ALL`, `--read-only`, `--network=none`, cgroups configurados
 - [ ]  Rate limit (30 execuções/min/user) com `flask-limiter`
 - [ ]  Logs estruturados JSON (`structlog`)
 - [ ]  Métricas Prometheus em `/metrics` (interno apenas)
