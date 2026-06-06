@@ -1,22 +1,26 @@
 # PROGRESS.md — Simples Editor
 
 > Acompanhamento de progresso das issues por sprint.
+> Itens concluídos são marcados com [x].
 
 ## Sprint 1 — Foundation & Auth
 - [x] #4 chore(devops): definir docker-compose com nginx, frontend e backend
 - [x] Repositório no GitHub criado, README inicial
 - [x] GitHub Project (Kanban) configurado
+- [x] docker-compose.yml com 3 serviços
 - [x] Projeto Supabase criado, Auth configurado
+- [x] Endpoint /api/health retorna {status: "ok"}
 
 ## Sprint 2 — Editor & NASM Panel
 - [x] Monaco Editor integrado
-- [x] Linguagem custom `simples` registrada
+- [x] Linguagem custom `simples` registrada (Monarch tokenizer)
 - [x] Tema dark com keywords destacadas
 - [x] Layout 3-painéis com splitter resizable
+- [x] Botão Run mockado
 
 ## Sprint 3 — Compilation Pipeline
 - [x] simplesc empacotado no container backend
-- [x] binutils-i686-linux-gnu instalado
+- [x] binutils-i686-linux-gnu instalado, linker funcional
 - [x] Endpoint POST /api/compile
 - [x] Erros renderizados como Monaco markers
 - [x] NASM gerado popula painel direito
@@ -25,6 +29,7 @@
 - [x] WebSocket /ws/run com flask-sock + gevent
 - [x] xterm.js integrado no painel terminal
 - [x] Imagem simples-runner com qemu-user-static
+- [x] PtyExecutionStrategy com docker-py
 - [x] Bridge bidirecional stdin/stdout
 - [x] leia interativo funcional end-to-end
 
@@ -33,14 +38,15 @@
 - [x] Logs estruturados JSON (structlog)
 - [x] Métricas Prometheus em /metrics
 - [x] Hard limit Docker configurado
+- [x] Sandbox security (cap-drop, read-only, network=none)
 - [x] #40 docs(docs): documentar resposta a incidente de sandbox
-- [x] #38 chore(devops): expor metricas Prometheus
+- [x] #38 chore(devops): expor metricas Prometheus em /metrics
 - [x] #37 chore(devops): adicionar logs estruturados em JSON
 - [x] #34 chore(devops): configurar hard limit do container
 
 ## Sprint 6 — Polish & Deploy
 - [x] #48 docs(docs): registrar retrospectiva da equipe
-- [x] #47 docs(docs): preparar apresentacao final
+- [ ] #47 docs(docs): preparar apresentacao final
 - [ ] #46 feat(devops): configurar dominio proprio apontando para o deploy
 - [ ] #45 feat(devops): publicar deploy em Oracle Cloud Ampere A1
 - [ ] #44 docs(docs): add demo video
@@ -48,3 +54,5 @@
 - [ ] Testes E2E com Playwright
 - [ ] Cobertura de testes backend >= 70%
 - [ ] Vídeo de demonstração (docs/demo.mp4)
+- [ ] Apresentação final preparada
+- [ ] Retrospectiva da equipe

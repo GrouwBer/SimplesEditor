@@ -1,0 +1,62 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: 'Dominio para deploy'
+        required: false
+        default: 'simples.example.edu.br'
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build images
+        run: docker compose -f docker-compose.yml build
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.ORACLE_HOST }}
+          username: ${{ secrets.ORACLE_USER }}
+          key: ${{ secrets.ORACLE_SSH_KEY }}
+          script: |
+            cd ${{ secrets.ORACLE_REPO_PATH || '/home/ubuntu/SimplesEditor' }}
+            git pull origin main
+            # Usar heredoc evita secrets no .bash_history
+            cat > .env << 'ENVEOF'
+            SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+            SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+            SUPABASE_JWT_SECRET=${{ secrets.SUPABASE_JWT_SECRET }}
+            ENVEOF
+            docker compose -f docker-compose.yml down --remove-orphans || true
+            docker compose -f docker-compose.yml up -d --build
+            # Aguardar health
+            HEALTHY=0
+            for i in $(seq 1 30); do
+              if curl -sk https://localhost/api/health | grep -q '"status": "ok"'; then
+                echo "Deploy OK"
+                HEALTHY=1
+                break
+              fi
+              sleep 2
+            done
+            if [ "$HEALTHY" -eq 0 ]; then
+              echo "::error::Health check failed after 60s"
+              docker compose -f docker-compose.yml logs backend
+              exit 1
+            fi
