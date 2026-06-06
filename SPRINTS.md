@@ -93,12 +93,12 @@
 
 - [ ]  Testes E2E com Playwright (login, edit, run, stdin, stop, timeout)
 - [ ]  Cobertura de testes backend ≥ 70% (`pytest --cov`)
-- [ ]  [README.md](http://README.md) completo com GIFs/screenshots
+- [x]  [README.md](http://README.md) completo com GIFs/screenshots
 - [ ]  Vídeo de demonstração de 2-3 min (`docs/demo.mp4`)
 - [ ]  **(Opcional, +1.0 ponto)** Deploy em Oracle Cloud Ampere A1 com TLS válido
 - [ ]  **(Opcional)** Domínio próprio (`*.edu.br`) apontando pro IP
 - [ ]  Apresentação final preparada (slides ou Notion)
-- [ ]  Retrospectiva da equipe (o que aprendemos)
+- [x]  Retrospectiva da equipe (o que aprendemos)
 ## Sprint 1 - Foundation & Auth
 - Estruturar repositório no GitHub e README inicial
 - Exercitar fluxo de PR
