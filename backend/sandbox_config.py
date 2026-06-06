@@ -6,12 +6,13 @@ de aluno via Docker SDK (docker-py).
 """
 
 import os
+from typing import Any
 
 # ============================================================
-# Hard limits do container
+# Configuracoes da aplicacao
 # ============================================================
 
-SANDBOX_CONFIG = {
+APP_CONFIG = {
     # Tempo maximo de execucao (wall-clock)
     "timeout": int(os.environ.get("EXEC_TIMEOUT_S", "10")),
 
@@ -26,17 +27,19 @@ SANDBOX_CONFIG = {
 
     # Nome da imagem do sandbox
     "sandbox_image": os.environ.get("SANDBOX_IMAGE", "simples-runner:latest"),
+}
 
-    # ============================================================
-    # Docker container limits
-    # ============================================================
+# ============================================================
+# Docker container hard limits
+# ============================================================
 
-    # Memoria maxima (RAM)
-    "mem_limit": "64m",
+DOCKER_HARD_LIMITS = {
+    # Memoria maxima (RAM) — parametrizavel via env var
+    "mem_limit": os.environ.get("SANDBOX_MEM_LIMIT", "64m"),
 
-    # CPU quota (0.5 = 50% de um core)
-    "cpu_quota": 50000,     # microsegundos por periodo
-    "cpu_period": 100000,   # periodo padrao (100ms)
+    # CPU quota (0.5 = 50% de um core) — parametrizavel via env var
+    "cpu_quota": int(os.environ.get("SANDBOX_CPU_QUOTA", "50000")),
+    "cpu_period": int(os.environ.get("SANDBOX_CPU_PERIOD", "100000")),
 
     # Timeout do stop (SIGTERM → SIGKILL)
     "stop_timeout": 12,     # segundos
@@ -58,27 +61,29 @@ SANDBOX_CONFIG = {
 
     # Seguranca adicional
     "security_opt": ["no-new-privileges"],
-
-    # Bloqueio total de dispositivos
-    "device_read_bps": [],
-    "device_write_bps": [],
 }
 
+# Chaves do DOCKER_HARD_LIMITS que sao repassadas para docker-py
+_DOCKER_KWARGS_KEYS = [
+    "mem_limit",
+    "cpu_quota",
+    "cpu_period",
+    "stop_timeout",
+    "pids_limit",
+    "network_disabled",
+    "read_only",
+    "tmpfs",
+    "cap_drop",
+    "security_opt",
+]
 
-def get_sandbox_run_kwargs():
+# Compatibilidade: SANDBOX_CONFIG unificado (APP_CONFIG + DOCKER_HARD_LIMITS)
+SANDBOX_CONFIG = {**APP_CONFIG, **DOCKER_HARD_LIMITS}
+
+
+def get_sandbox_run_kwargs() -> dict[str, Any]:
     """
     Retorna os kwargs para docker-py's client.containers.run()
     com todos os hard limits aplicados.
     """
-    return {
-        "mem_limit": SANDBOX_CONFIG["mem_limit"],
-        "cpu_quota": SANDBOX_CONFIG["cpu_quota"],
-        "cpu_period": SANDBOX_CONFIG["cpu_period"],
-        "stop_timeout": SANDBOX_CONFIG["stop_timeout"],
-        "pids_limit": SANDBOX_CONFIG["pids_limit"],
-        "network_disabled": SANDBOX_CONFIG["network_disabled"],
-        "read_only": SANDBOX_CONFIG["read_only"],
-        "tmpfs": SANDBOX_CONFIG["tmpfs"],
-        "cap_drop": SANDBOX_CONFIG["cap_drop"],
-        "security_opt": SANDBOX_CONFIG["security_opt"],
-    }
+    return {key: DOCKER_HARD_LIMITS[key] for key in _DOCKER_KWARGS_KEYS}
