@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 # deploy.sh — Deploy automatizado para Oracle Cloud Ampere A1
-# Uso: ./scripts/deploy.sh [--domain simples.example.edu.br]
+# Uso: ./scripts/deploy.sh <dominio> [branch]
+# Exemplo: ./scripts/deploy.sh simples.example.edu.br dev
 
 set -euo pipefail
 
 DOMAIN="${1:-simples.example.edu.br}"
+BRANCH="${2:-dev}"
 COMPOSE_FILE="docker-compose.yml"
 ENV_FILE=".env"
 
 echo "=== Simples Editor — Deploy ==="
 echo "Dominio: $DOMAIN"
+echo "Branch: $BRANCH"
 echo ""
 
 # 1. Verificar pre-requisitos
@@ -35,8 +38,8 @@ if [ ! -f "nginx/certs/fullchain.pem" ] || [ ! -f "nginx/certs/privkey.pem" ]; t
 fi
 
 # 4. Pull latest
-echo "Atualizando codigo..."
-git pull origin dev 2>/dev/null || echo "  (repositorio local, pulando git pull)"
+echo "Atualizando codigo (branch: $BRANCH)..."
+git pull origin "$BRANCH" 2>/dev/null || echo "  (repositorio local, pulando git pull)"
 
 # 5. Build
 echo "Build das imagens Docker..."

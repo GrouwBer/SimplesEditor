@@ -35,18 +35,28 @@ jobs:
           username: ${{ secrets.ORACLE_USER }}
           key: ${{ secrets.ORACLE_SSH_KEY }}
           script: |
-            cd /home/ubuntu/SimplesEditor
+            cd ${{ secrets.ORACLE_REPO_PATH || '/home/ubuntu/SimplesEditor' }}
             git pull origin main
-            echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > .env
-            echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
-            echo "SUPABASE_JWT_SECRET=${{ secrets.SUPABASE_JWT_SECRET }}" >> .env
+            # Usar heredoc evita secrets no .bash_history
+            cat > .env << 'ENVEOF'
+            SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+            SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+            SUPABASE_JWT_SECRET=${{ secrets.SUPABASE_JWT_SECRET }}
+            ENVEOF
             docker compose -f docker-compose.yml down --remove-orphans || true
             docker compose -f docker-compose.yml up -d --build
             # Aguardar health
+            HEALTHY=0
             for i in $(seq 1 30); do
               if curl -sk https://localhost/api/health | grep -q '"status": "ok"'; then
                 echo "Deploy OK"
+                HEALTHY=1
                 break
               fi
               sleep 2
             done
+            if [ "$HEALTHY" -eq 0 ]; then
+              echo "::error::Health check failed after 60s"
+              docker compose -f docker-compose.yml logs backend
+              exit 1
+            fi
