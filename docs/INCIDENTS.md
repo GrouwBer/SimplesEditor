@@ -11,10 +11,10 @@ O Simples Editor executa codigo de alunos em containers Docker isolados. Cada ex
 - `--cap-drop=ALL` — todas as capacidades do kernel removidas
 - `--read-only` — filesystem somente leitura
 - `--network=none` — sem acesso a rede
-- `--memory=64m` — limite de memoria
+- `mem_limit="64m"` (docker-py) / `--memory=64m` (CLI) — limite de memoria
 - `--stop-timeout=12` — kill forcado apos timeout
-- `--cpus=0.5` — limite de CPU
-- Rate limit: 30 execucoes/minuto por usuario
+- `cpu_quota=50000` (docker-py) / `--cpus=0.5` (CLI) — limite de CPU
+- Rate limit: 30 execucoes/minuto por usuario (planejado — vide SPRINTS.md)
 
 ---
 
@@ -87,16 +87,16 @@ O Simples Editor executa codigo de alunos em containers Docker isolados. Cada ex
 
 ### Metricas Prometheus (`/metrics`)
 
-- `simples_executions_total` — total de execucoes
-- `simples_execution_duration_seconds` — duracao das execucoes
-- `simples_errors_total` — erros por tipo
-- `simples_active_containers` — containers ativos
+- `simples_executions_total{status}` — total de execucoes (labels: success, error, timeout)
+- `simples_execution_duration_seconds` — duracao das execucoes (histograma)
+- `simples_compilations_total{status}` — total de compilacoes (labels: success, error)
+- `simples_active_containers` — containers sandbox ativos no momento (Gauge)
 
 ### Alertas recomendados
 
 | Metrica | Limiar | Acao |
 |---|---|---|
-| `simples_errors_total{type="timeout"}` | > 10/min | Verificar abuso |
+| `simples_executions_total{status="timeout"}` | > 10/min | Verificar abuso |
 | `simples_active_containers` | > 20 | Possivel fork bomb |
 | `simples_execution_duration_seconds` (p99) | > 8s | Ajustar timeout |
 
