@@ -81,7 +81,7 @@
 - [x]  Logs estruturados JSON (`structlog`)
 - [x]  Métricas Prometheus em `/metrics` (interno apenas)
 - [ ]  Audit do sandbox: tentativa de escrever em `/`, fork bomb, network — todas bloqueadas
-- [ ]  Documentação de incidente (`docs/INCIDENTS.md`) — o que fazer se um aluno escapar
+- [x]  Documentação de incidente (`docs/INCIDENTS.md`) — o que fazer se um aluno escapar
 
 **Definition of Done**: code review de segurança feito por outro grupo. Loop infinito é interrompido em ≤11s. Stop interrompe em ≤2s.
 
