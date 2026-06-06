@@ -75,10 +75,10 @@
 
 - [ ]  Botão **Stop** funcional (envia `{type: "stop"}` → SIGTERM → SIGKILL)
 - [ ]  Timeout de execução wall-clock (10s) com `asyncio.wait_for`
-- [ ]  Hard limit Docker (`--stop-timeout=12`)
-- [ ]  `--cap-drop=ALL`, `--read-only`, `--network=none`, cgroups configurados
+- [x]  Hard limit Docker (`--stop-timeout=12`)
+- [x]  `--cap-drop=ALL`, `--read-only`, `--network=none`, cgroups configurados
 - [ ]  Rate limit (30 execuções/min/user) com `flask-limiter`
-- [ ]  Logs estruturados JSON (`structlog`)
+- [x]  Logs estruturados JSON (`structlog`)
 - [x]  Métricas Prometheus em `/metrics` (interno apenas)
 - [ ]  Audit do sandbox: tentativa de escrever em `/`, fork bomb, network — todas bloqueadas
 - [ ]  Documentação de incidente (`docs/INCIDENTS.md`) — o que fazer se um aluno escapar
