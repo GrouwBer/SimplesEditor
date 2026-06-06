@@ -154,12 +154,15 @@ curl -I http://simples.example.edu.br
 ## 8. Configurar Renovacao Automatica do Certificado
 
 ```bash
-# Adicionar ao crontab
+# Adicionar ao crontab (renovacao diaria as 3h)
 sudo crontab -e
 
 # Adicionar linha:
-0 3 * * * certbot renew --quiet --post-hook "cp /etc/letsencrypt/live/simples.example.edu.br/fullchain.pem /home/ubuntu/SimplesEditor/nginx/certs/ && cp /etc/letsencrypt/live/simples.example.edu.br/privkey.pem /home/ubuntu/SimplesEditor/nginx/certs/ && docker compose -f /home/ubuntu/SimplesEditor/docker-compose.yml restart nginx"
+0 3 * * * /home/ubuntu/SimplesEditor/scripts/renew-certs.sh
 ```
+
+> O script `scripts/renew-certs.sh` encapsula a logica de renovacao.
+> Se os paths mudarem, basta editar o script — o crontab permanece limpo.
 
 ---
 
