@@ -30,16 +30,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # UID/GID 65534 = nobody (padrao sistemas Linux)
 RUN useradd -u 65534 -M -s /usr/sbin/nologin sandbox || true
 
+# Diretorio de trabalho — montado como read-only bind mount pelo backend
+# O binario compilado e colocado aqui pelo backend antes do container iniciar
+# IMPORTANTE: criado ANTES da limpeza de binarios (o RUN seguinte precisa de /bin/sh)
+RUN mkdir -p /sandbox && chown 65534:65534 /sandbox
+
 # Remove binarios desnecessarios para reduzir superficie de ataque
 # Mantem apenas /usr/bin/qemu-i386-static
+# Deve ser o ULTIMO RUN — apos este passo nao ha mais shell disponivel
 RUN find /usr/bin -type f ! -name 'qemu-i386-static' -delete 2>/dev/null || true \
     && find /usr/sbin -type f -delete 2>/dev/null || true \
     && find /bin -type f -delete 2>/dev/null || true \
     && find /sbin -type f -delete 2>/dev/null || true
-
-# Diretorio de trabalho — montado como read-only bind mount pelo backend
-# O binario compilado e colocado aqui pelo backend antes do container iniciar
-RUN mkdir -p /sandbox && chown 65534:65534 /sandbox
 
 # Metadata de seguranca
 LABEL org.simples-editor.sandbox="true" \
