@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test'
 
+// === Tipos para mocks E2E ===
+
+/** Evento recebido pelo handler onmessage do WebSocket mockado */
+interface MockMessageEvent {
+  data: string
+}
+
 // Testes E2E - Terminal interativo (xterm.js + WebSocket)
 // Cobre: US-05 (stdin via leia), US-07 (botao Stop), US-09 (timeouts)
 //
@@ -13,8 +20,6 @@ test.describe('Terminal Interativo - Fluxo stdin/stdout', () => {
   })
 
   test('painel do terminal esta presente no layout', async ({ page }) => {
-    // Sprint 2: placeholder do terminal
-    // Sprint 4: xterm.js funcional
     await page.goto('/')
     await expect(page.locator('#root')).toBeVisible()
   })
@@ -29,11 +34,10 @@ test.describe('Terminal Interativo - Fluxo stdin/stdout', () => {
 
     // Mock do WebSocket para simular o backend
     await page.evaluate(() => {
-      // Injeta um mock de WebSocket que simula o fluxo
-      const OriginalWebSocket = (window as any).WebSocket
-      ;(window as any).WebSocket = class MockWebSocket {
+      const win = window as unknown as Record<string, unknown>
+      win.WebSocket = class MockWebSocket {
         onopen: (() => void) | null = null
-        onmessage: ((e: any) => void) | null = null
+        onmessage: ((e: MockMessageEvent) => void) | null = null
         onclose: (() => void) | null = null
 
         constructor(_url: string) {
@@ -61,7 +65,6 @@ test.describe('Terminal Interativo - Fluxo stdin/stdout', () => {
             }, 400)
             // Simula envio de stdin pelo usuario
             setTimeout(() => {
-              // O backend processa o stdin e responde
               this.onmessage?.({
                 data: JSON.stringify({ type: 'stdout', data: '42\n' }),
               })
@@ -78,11 +81,10 @@ test.describe('Terminal Interativo - Fluxo stdin/stdout', () => {
           // stdin enviado pelo frontend - mock de confirmacao
         }
 
-        close() {}
+        close() { /* noop */ }
       }
     })
 
-    // Verifica que a pagina carrega sem erros
     await expect(page.locator('#root')).toBeVisible()
   })
 
@@ -96,10 +98,10 @@ test.describe('Terminal Interativo - Fluxo stdin/stdout', () => {
     // Mock de WebSocket para simular stop
     await page.evaluate(() => {
       let stopReceived = false
-      const OriginalWebSocket = (window as any).WebSocket
-      ;(window as any).WebSocket = class MockWebSocket {
+      const win = window as unknown as Record<string, unknown>
+      win.WebSocket = class MockWebSocket {
         onopen: (() => void) | null = null
-        onmessage: ((e: any) => void) | null = null
+        onmessage: ((e: MockMessageEvent) => void) | null = null
 
         constructor(_url: string) {
           setTimeout(() => {
@@ -121,14 +123,14 @@ test.describe('Terminal Interativo - Fluxo stdin/stdout', () => {
 
         send(data: string) {
           try {
-            const msg = JSON.parse(data)
+            const msg = JSON.parse(data) as { type: string }
             if (msg.type === 'stop') {
               stopReceived = true
             }
-          } catch {}
+          } catch { /* mock ignora JSON invalido */ }
         }
 
-        close() {}
+        close() { /* noop */ }
       }
     })
 
@@ -143,10 +145,10 @@ test.describe('Terminal Interativo - Fluxo stdin/stdout', () => {
     await page.goto('/')
 
     await page.evaluate(() => {
-      const OriginalWebSocket = (window as any).WebSocket
-      ;(window as any).WebSocket = class MockWebSocket {
+      const win = window as unknown as Record<string, unknown>
+      win.WebSocket = class MockWebSocket {
         onopen: (() => void) | null = null
-        onmessage: ((e: any) => void) | null = null
+        onmessage: ((e: MockMessageEvent) => void) | null = null
 
         constructor(_url: string) {
           setTimeout(() => {
@@ -161,8 +163,8 @@ test.describe('Terminal Interativo - Fluxo stdin/stdout', () => {
           }, 500)
         }
 
-        send(_data: string) {}
-        close() {}
+        send(_data: string) { /* noop - timeout test */ }
+        close() { /* noop */ }
       }
     })
 

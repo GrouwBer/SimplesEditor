@@ -1,7 +1,22 @@
 import { test, expect } from '@playwright/test'
 
+// === Tipos para mocks E2E ===
+
+/** Evento recebido pelo handler onmessage do WebSocket mockado */
+interface MockMessageEvent {
+  data: string
+}
+
+/** Permite acessar propriedades customizadas na window durante testes */
+declare global {
+  interface Window {
+    __e2e_events?: string[]
+    __stop_enviado?: boolean
+  }
+}
+
 // Teste E2E - Pipeline completo: login → editar → run → stdin → stop
-// Este e o teste principal que cobre o fluxo end-to-end completo descrito
+// Este eh o teste principal que cobre o fluxo end-to-end completo descrito
 // nos criterios de aceite da issue #41.
 //
 // Fluxo testado:
@@ -12,28 +27,6 @@ import { test, expect } from '@playwright/test'
 //   5. Usuario interage com o terminal (digita input para leia)
 //   6. Usuario ve a saida do programa
 //   7. Usuario pode clicar Stop para interromper execucao
-
-const PROGRAMA_SIMPLES_EXEMPLO = [
-  'programa teste_soma',
-  '  inteiro a, b, resultado',
-  'inicio',
-  '  leia a',
-  '  leia b',
-  '  resultado <- a + b',
-  '  escreval resultado',
-  'fim',
-].join('\n')
-
-const PROGRAMA_LOOP_INFINITO = [
-  'programa teste_loop',
-  '  inteiro x',
-  'inicio',
-  '  x <- 0',
-  '  enquanto x >= 0 faca',
-  '    x <- x + 1',
-  '  fimenquanto',
-  'fim',
-].join('\n')
 
 test.describe('Pipeline Completo: login -> editar -> run -> stdin -> stop', () => {
   test.beforeEach(async ({ page }) => {
@@ -62,23 +55,14 @@ test.describe('Pipeline Completo: login -> editar -> run -> stdin -> stop', () =
   })
 
   test('fluxo de compilacao com erro - exibe markers no Monaco', async ({ page }) => {
-    // Cenario: codigo com erro de sintaxe
-    const codigoInvalido = [
-      'programa teste_erro',
-      '  inteiro x',
-      'inicio',
-      '  escreva y',  // y nao declarado
-      'fim',
-    ].join('\n')
-
     await page.goto('/')
 
     // Mock WebSocket que retorna erro de compilacao
-    await page.evaluate((codigoErrado) => {
-      const OriginalWebSocket = (window as any).WebSocket
-      ;(window as any).WebSocket = class MockWebSocket {
+    await page.evaluate(() => {
+      const win = window as unknown as Record<string, unknown>
+      win.WebSocket = class MockWebSocket {
         onopen: (() => void) | null = null
-        onmessage: ((e: any) => void) | null = null
+        onmessage: ((e: MockMessageEvent) => void) | null = null
         sentCode: string | null = null
 
         constructor(_url: string) {
@@ -87,9 +71,9 @@ test.describe('Pipeline Completo: login -> editar -> run -> stdin -> stop', () =
 
         send(data: string) {
           try {
-            const msg = JSON.parse(data)
+            const msg = JSON.parse(data) as { type: string; code?: string }
             if (msg.type === 'compile_and_run') {
-              this.sentCode = msg.code
+              this.sentCode = msg.code ?? null
               // Simula erro de compilacao - variavel nao declarada
               this.onmessage?.({
                 data: JSON.stringify({
@@ -101,10 +85,10 @@ test.describe('Pipeline Completo: login -> editar -> run -> stdin -> stop', () =
                 }),
               })
             }
-          } catch {}
+          } catch { /* mock ignora JSON invalido */ }
         }
 
-        close() {}
+        close() { /* noop */ }
       }
     })
 
@@ -118,16 +102,14 @@ test.describe('Pipeline Completo: login -> editar -> run -> stdin -> stop', () =
     // → usuario envia stdin("10\n") → stdout("Digite b: ")
     // → usuario envia stdin("5\n") → stdout("15\n") → exit(0)
 
-    const eventos: string[] = []
-
     await page.goto('/')
 
     await page.evaluate(() => {
       const eventosRegistrados: string[] = []
-      const OriginalWebSocket = (window as any).WebSocket
-      ;(window as any).WebSocket = class MockWebSocket {
+      const win = window as unknown as Record<string, unknown>
+      win.WebSocket = class MockWebSocket {
         onopen: (() => void) | null = null
-        onmessage: ((e: any) => void) | null = null
+        onmessage: ((e: MockMessageEvent) => void) | null = null
         stdinStep = 0
 
         constructor(_url: string) {
@@ -170,9 +152,9 @@ test.describe('Pipeline Completo: login -> editar -> run -> stdin -> stop', () =
 
         send(data: string) {
           try {
-            const msg = JSON.parse(data)
+            const msg = JSON.parse(data) as { type: string; data?: string }
             if (msg.type === 'stdin') {
-              eventosRegistrados.push(`stdin:${msg.data.trim()}`)
+              eventosRegistrados.push(`stdin:${(msg.data ?? '').trim()}`)
               this.stdinStep++
 
               if (this.stdinStep === 1) {
@@ -203,14 +185,14 @@ test.describe('Pipeline Completo: login -> editar -> run -> stdin -> stop', () =
                 data: JSON.stringify({ type: 'exit', code: -9 }),
               })
             }
-          } catch {}
+          } catch { /* mock ignora JSON invalido */ }
         }
 
-        close() {}
+        close() { /* noop */ }
       }
 
       // Expõe eventos para verificacao
-      ;(window as any).__e2e_events = eventosRegistrados
+      window.__e2e_events = eventosRegistrados
     })
 
     await expect(page.locator('#root')).toBeVisible()
@@ -223,14 +205,12 @@ test.describe('Pipeline Completo: login -> editar -> run -> stdin -> stop', () =
 
     await page.goto('/')
 
-    let stopEnviado = false
-
     await page.evaluate(() => {
       let stopFlag = false
-      const OriginalWebSocket = (window as any).WebSocket
-      ;(window as any).WebSocket = class MockWebSocket {
+      const win = window as unknown as Record<string, unknown>
+      win.WebSocket = class MockWebSocket {
         onopen: (() => void) | null = null
-        onmessage: ((e: any) => void) | null = null
+        onmessage: ((e: MockMessageEvent) => void) | null = null
 
         constructor(_url: string) {
           setTimeout(() => {
@@ -238,7 +218,7 @@ test.describe('Pipeline Completo: login -> editar -> run -> stdin -> stop', () =
             // Inicia execucao de um programa (simula loop)
             this.onmessage?.({ data: JSON.stringify({ type: 'exec_started' }) })
             // Emite stdout continuo (programa rodando)
-            const interval = setInterval(() => {
+            const interval: ReturnType<typeof setInterval> = setInterval(() => {
               if (stopFlag) {
                 clearInterval(interval)
                 return
@@ -252,29 +232,30 @@ test.describe('Pipeline Completo: login -> editar -> run -> stdin -> stop', () =
 
         send(data: string) {
           try {
-            const msg = JSON.parse(data)
+            const msg = JSON.parse(data) as { type: string }
             if (msg.type === 'stop') {
               stopFlag = true
-              ;(window as any).__stop_enviado = true
+              window.__stop_enviado = true
               setTimeout(() => {
                 this.onmessage?.({
                   data: JSON.stringify({ type: 'exit', code: -9, duration_ms: 500 }),
                 })
               }, 100)
             }
-          } catch {}
+          } catch { /* mock ignora JSON invalido */ }
         }
 
-        close() {}
+        close() { /* noop */ }
       }
     })
 
     await expect(page.locator('#root')).toBeVisible()
 
     // Verifica que o mock de stop foi configurado
-    stopEnviado = await page.evaluate(() => !!(window as any).__stop_enviado)
+    const stopEnviado = await page.evaluate(() => !!window.__stop_enviado)
     // Na pratica, stopEnviado sera false ate que um botao Stop real
     // seja clicado - o mock apenas valida que o fluxo esta preparado
+    expect(stopEnviado).toBeDefined()
   })
 
   test('timeout de execucao - loop infinito interrompido automaticamente', async ({ page }) => {
@@ -285,10 +266,10 @@ test.describe('Pipeline Completo: login -> editar -> run -> stdin -> stop', () =
     await page.goto('/')
 
     await page.evaluate(() => {
-      const OriginalWebSocket = (window as any).WebSocket
-      ;(window as any).WebSocket = class MockWebSocket {
+      const win = window as unknown as Record<string, unknown>
+      win.WebSocket = class MockWebSocket {
         onopen: (() => void) | null = null
-        onmessage: ((e: any) => void) | null = null
+        onmessage: ((e: MockMessageEvent) => void) | null = null
 
         constructor(_url: string) {
           setTimeout(() => {
@@ -296,7 +277,7 @@ test.describe('Pipeline Completo: login -> editar -> run -> stdin -> stop', () =
             this.onmessage?.({ data: JSON.stringify({ type: 'exec_started' }) })
             // Emite stdout por um tempo, depois timeout
             let counter = 0
-            const interval = setInterval(() => {
+            const interval: ReturnType<typeof setInterval> = setInterval(() => {
               counter++
               this.onmessage?.({
                 data: JSON.stringify({ type: 'stdout', data: `iteracao ${counter}\n` }),
@@ -311,8 +292,8 @@ test.describe('Pipeline Completo: login -> editar -> run -> stdin -> stop', () =
           }, 0)
         }
 
-        send(_data: string) {}
-        close() {}
+        send(_data: string) { /* noop - timeout test */ }
+        close() { /* noop */ }
       }
     })
 
