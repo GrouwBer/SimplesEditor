@@ -1,5 +1,7 @@
 # Plano de Resposta a Incidentes
 
+> **Última revisão:** 2026-06-15
+>
 > Documento de referencia para resposta a incidentes de seguranca no SimplesEditor.
 > Sprint 5 — Hardening & Observability (PRD secao 11.6, Threat model).
 

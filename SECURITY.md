@@ -1,5 +1,7 @@
 # Security
 
+> **Última revisão:** 2026-06-15
+
 ## Politica de Segredos
 
 Do NOT commit secrets (API keys, tokens, passwords) in this repository.
