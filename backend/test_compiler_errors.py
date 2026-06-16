@@ -2,8 +2,6 @@
 Testes do normalizador de erros de compilacao (compiler_errors.py).
 """
 
-import json
-import pytest
 from compiler_errors import (
     normalize_error,
     normalize_errors,
