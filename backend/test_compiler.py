@@ -6,8 +6,7 @@ Usa mocking para evitar dependencia de ferramentas externas
 """
 
 import json
-import os
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock
 
 import pytest
 from app import app
@@ -162,7 +161,8 @@ class TestCompileSource:
             MagicMock(returncode=0, stdout=b"", stderr=b""),
         ]
 
-        from compiler import compile_source, COMPILATIONS_TOTAL
+        from compiler import compile_source
+        from app import COMPILATIONS_TOTAL
 
         COMPILATIONS_TOTAL.clear()
         compile_source("programa")
@@ -177,7 +177,8 @@ class TestCompileSource:
             returncode=1, stdout=b"", stderr=b"erro"
         )
 
-        from compiler import compile_source, COMPILATIONS_TOTAL
+        from compiler import compile_source
+        from app import COMPILATIONS_TOTAL
 
         COMPILATIONS_TOTAL.clear()
         compile_source("programa invalido")

@@ -10,6 +10,8 @@ Cada etapa e isolada e tratada com timeout.
 """
 
 import os
+import re
+import shutil
 import subprocess
 import tempfile
 import time
@@ -17,8 +19,11 @@ import uuid
 from pathlib import Path
 from typing import NamedTuple
 
-from app import COMPILATIONS_TOTAL, logger
+from logging_config import get_logger
 from sandbox_config import APP_CONFIG
+
+
+logger = get_logger(__name__)
 
 
 class CompilePhaseResult(NamedTuple):
@@ -139,7 +144,6 @@ def _parse_simplesc_errors(stderr: str) -> list[dict]:
     Returns:
         Lista de dicts com keys: line, column, message.
     """
-    import re
 
     errors = []
     # Tenta corresponder padroes como "linha 5" ou "line 5"
@@ -197,6 +201,9 @@ def compile_source(source_code: str) -> CompileResult:
     start = time.monotonic()
     phases: dict[str, CompilePhaseResult] = {}
     errors: list[dict] = []
+
+    # Import lazy para evitar circular import com app.py
+    from app import COMPILATIONS_TOTAL
 
     # Gera ID unico para este ciclo de compilacao
     compile_id = uuid.uuid4().hex[:8]
@@ -314,7 +321,6 @@ def compile_source(source_code: str) -> CompileResult:
 
     finally:
         # Limpa artefatos temporarios (opcional: mantem para debug)
-        import shutil
         if not os.environ.get("KEEP_COMPILE_ARTIFACTS"):
             try:
                 shutil.rmtree(work_dir, ignore_errors=True)
