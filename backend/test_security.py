@@ -6,9 +6,7 @@ estao corretamente aplicadas em sandbox_config.py e que
 get_sandbox_run_kwargs() retorna os parametros esperados para o Docker SDK.
 """
 
-import pytest
 from sandbox_config import (
-    APP_CONFIG,
     DOCKER_HARD_LIMITS,
     get_sandbox_run_kwargs,
     SANDBOX_CONFIG,
