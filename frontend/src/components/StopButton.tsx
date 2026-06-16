@@ -76,7 +76,7 @@ const StopButton: FC<StopButtonProps> = ({ state, onStop }) => {
     )
   }
 
-  // idle ou finished
+  // idle ou finished — o botao Run (verde) e renderizado pelo componente Toolbar
   return null
 }
 
