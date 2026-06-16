@@ -9,6 +9,10 @@ logger = get_logger(__name__)
 
 app = Flask(__name__)
 
+# Registrar endpoint WebSocket /ws/run
+from ws_handler import register_websocket
+register_websocket(app)
+
 # Metricas Prometheus — prefixo `simples_` evita colisao com outras apps
 
 # Contador de execucoes por status (success, error, timeout)
