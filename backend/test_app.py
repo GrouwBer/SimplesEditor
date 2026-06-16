@@ -9,10 +9,9 @@ Cobre:
 import importlib
 import logging
 import os
-from unittest.mock import MagicMock, patch
 
 import pytest
-import structlog
+
 from app import app
 
 
@@ -151,7 +150,6 @@ def test_setup_logging_respects_env_level(monkeypatch):
 
     # Reseta o logging para estado limpo
     root = logging.getLogger()
-    orig_level = root.level
 
     from logging_config import setup_logging
     setup_logging()
