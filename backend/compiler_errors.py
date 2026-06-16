@@ -63,7 +63,7 @@ def _classify_simplesc_error(message: str) -> str:
         return "unknown_command"
     if "token" in msg_lower or "inesperad" in msg_lower:
         return "unexpected_token"
-    if "fim" in msg_lower or "fim" in msg_lower:
+    if "fim" in msg_lower or "end" in msg_lower:
         return "missing_fim"
     if "declarad" in msg_lower or "definid" in msg_lower:
         return "undeclared"
