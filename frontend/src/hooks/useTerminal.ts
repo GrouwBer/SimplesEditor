@@ -1,5 +1,13 @@
 import { useState, useCallback, useRef } from 'react'
 
+// Logger condicional (apenas em desenvolvimento)
+const logDebug = (...args: unknown[]) => {
+  if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.warn(...args)
+  }
+}
+
 export interface TerminalLine {
   id: number
   text: string
@@ -18,7 +26,7 @@ export interface TerminalLine {
  */
 export function useTerminal(wsRef: React.MutableRefObject<WebSocket | null>) {
   const [lines, setLines] = useState<TerminalLine[]>([])
-  const nextId = useRef(1)
+  const nextId = useRef(1)  // contador monotônico (ref — seguro contra re-renders, IDs únicos por sessão)
 
   // Adiciona uma linha de output (stdout/stderr) ao buffer
   const appendOutput = useCallback((text: string, type: 'stdout' | 'stderr' = 'stdout') => {
@@ -30,7 +38,7 @@ export function useTerminal(wsRef: React.MutableRefObject<WebSocket | null>) {
   const sendStdin = useCallback((data: string) => {
     const ws = wsRef.current
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-      console.warn('[useTerminal] WebSocket nao conectado para enviar stdin')
+      logDebug('[useTerminal] WebSocket nao conectado para enviar stdin')
       return false
     }
 
