@@ -5,11 +5,9 @@ Usa mocks para docker-py para evitar dependencia de Docker real.
 """
 
 import time
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 import pytest
-
-from app import app
 from sandbox_config import APP_CONFIG
 
 
