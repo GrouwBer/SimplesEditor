@@ -11,12 +11,8 @@ Os timeouts sao configurados em sandbox_config.APP_CONFIG:
   - timeout: 10s (padrao de execucao)
 """
 
-import signal
 import subprocess
-import sys
-import threading
-import time
-from typing import IO, Any
+from typing import Any
 
 from sandbox_config import APP_CONFIG
 
@@ -67,13 +63,6 @@ def run_with_timeout(
         return result
 
     except subprocess.TimeoutExpired:
-        stdout = ""
-        stderr = ""
-        if hasattr(cmd, 'stdout'):
-            stdout = cmd.stdout
-        if hasattr(cmd, 'stderr'):
-            stderr = cmd.stderr
-
         raise TimeoutError(
             cmd=cmd,
             timeout=timeout,
