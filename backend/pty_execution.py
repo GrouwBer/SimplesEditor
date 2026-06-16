@@ -12,7 +12,6 @@ binarios dentro do container sandbox, permitindo:
 
 import os
 import select
-import signal
 import socket
 import threading
 import time
@@ -20,14 +19,16 @@ from typing import Callable
 
 from logging_config import get_logger
 from sandbox_config import APP_CONFIG, get_sandbox_run_kwargs
+from app import ACTIVE_CONTAINERS
+
+# Logger do modulo
+logger = get_logger(__name__)
 
 
 # Tempo entre ciclos de leitura do socket (segundos)
 _POLL_INTERVAL = 0.05
 # Tamanho maximo do buffer de leitura
 _BUF_SIZE = 4096
-# Timeout para aguardar o container iniciar
-_START_TIMEOUT = 5
 
 
 class PtyExecutionError(Exception):
@@ -372,5 +373,4 @@ class PtyExecutionStrategy:
                 pass
             self._container = None
 
-        from app import ACTIVE_CONTAINERS
         ACTIVE_CONTAINERS.dec()

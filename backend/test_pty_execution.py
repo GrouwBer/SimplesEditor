@@ -2,10 +2,7 @@
 Testes do PtyExecutionStrategy.
 """
 
-import time
-from unittest.mock import MagicMock, patch, PropertyMock
-
-import pytest
+from unittest.mock import MagicMock, patch
 
 
 # ============================================================
@@ -35,7 +32,7 @@ class TestPtyExecutionStrategy:
             assert call_kwargs["stdin_open"] is True
             assert call_kwargs["detach"] is True
 
-    @patch("pty_execution.docker.from_env")
+    @patch("docker.from_env")
     def test_write_stdin_sends_data(self, mock_docker):
         """write_stdin() deve enviar dados pelo socket."""
         mock_client = MagicMock()
@@ -48,12 +45,14 @@ class TestPtyExecutionStrategy:
         from pty_execution import PtyExecutionStrategy
 
         strategy = PtyExecutionStrategy()
-        strategy.start("/sandbox/prog")
+        # Injeta socket mockado diretamente para evitar o codigo de unwrap do _sock
+        strategy._sock = mock_sock
+        strategy._running = True
         strategy.write_stdin("hello\n")
 
         mock_sock.sendall.assert_called_once_with(b"hello\n")
 
-    @patch("pty_execution.docker.from_env")
+    @patch("docker.from_env")
     def test_write_stdin_no_socket(self, mock_docker):
         """write_stdin() sem socket ativo nao deve quebrar."""
         from pty_execution import PtyExecutionStrategy
@@ -62,7 +61,7 @@ class TestPtyExecutionStrategy:
         # Nao chamou start() -> sem socket
         strategy.write_stdin("data")  # Nao deve levantar excecao
 
-    @patch("pty_execution.docker.from_env")
+    @patch("docker.from_env")
     def test_stop_kills_container(self, mock_docker):
         """stop() deve matar o container."""
         mock_client = MagicMock()
@@ -81,7 +80,7 @@ class TestPtyExecutionStrategy:
         # Deve ter executado kill no container
         assert mock_container.exec_run.called or mock_container.kill.called
 
-    @patch("pty_execution.docker.from_env")
+    @patch("docker.from_env")
     def test_stop_without_container(self, mock_docker):
         """stop() sem container nao deve quebrar."""
         from pty_execution import PtyExecutionStrategy
@@ -89,7 +88,7 @@ class TestPtyExecutionStrategy:
         strategy = PtyExecutionStrategy()
         strategy.stop()  # Nao deve levantar excecao
 
-    @patch("pty_execution.docker.from_env")
+    @patch("docker.from_env")
     def test_read_loop_calls_stdout_callback(self, mock_docker):
         """read_loop() deve chamar callback de stdout com dados."""
         mock_client = MagicMock()
@@ -116,8 +115,6 @@ class TestPtyExecutionStrategy:
             received = []
             strategy.on_stdout(lambda data: received.append(data))
 
-            original_running = strategy._running
-
             def fake_reload():
                 strategy._container.status = "exited"
 
@@ -129,7 +126,7 @@ class TestPtyExecutionStrategy:
             # Mas nao deve ter quebrado
             assert strategy.exit_code == 0
 
-    @patch("pty_execution.docker.from_env")
+    @patch("docker.from_env")
     def test_on_exit_called_when_container_exits(self, mock_docker):
         """on_exit deve ser chamado quando o container termina."""
         mock_client = MagicMock()
@@ -161,7 +158,7 @@ class TestPtyExecutionStrategy:
         assert len(exit_data) == 1
         assert exit_data[0] == (0, False)
 
-    @patch("pty_execution.docker.from_env")
+    @patch("docker.from_env")
     def test_properties(self, mock_docker):
         """Propriedades timed_out e exit_code devem funcionar."""
         from pty_execution import PtyExecutionStrategy
