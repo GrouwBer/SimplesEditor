@@ -2,12 +2,17 @@ from flask import Flask, jsonify, request, abort
 import os
 from prometheus_client import Counter, Gauge, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from logging_config import setup_logging, get_logger
+from rate_limiter import is_rate_limited, get_rate_limit_headers
 
 # Inicializar logs estruturados
 setup_logging()
 logger = get_logger(__name__)
 
 app = Flask(__name__)
+
+# Registrar endpoint WebSocket /ws/run
+from ws_handler import register_websocket
+register_websocket(app)
 
 # Metricas Prometheus — prefixo `simples_` evita colisao com outras apps
 
@@ -38,6 +43,13 @@ ACTIVE_CONTAINERS = Gauge(
     'Numero de containers sandbox ativos no momento',
 )
 
+# Contador de rate limit excedido
+RATE_LIMIT_EXCEEDED = Counter(
+    'simples_rate_limit_exceeded_total',
+    'Total de requisicoes rejeitadas por rate limit',
+    ['limit_type']
+)
+
 
 @app.before_request
 def log_request():
@@ -50,10 +62,92 @@ def log_request():
     )
 
 
+# Rotas que nao devem ter rate limit aplicado
+_RATE_LIMIT_EXEMPT_PATHS = ('/api/health', '/metrics', '/api/limits')
+
+
+@app.before_request
+def apply_rate_limit():
+    """Aplica rate limit em requisicoes a rotas de execucao."""
+    if request.path.startswith('/api/') and request.path not in _RATE_LIMIT_EXEMPT_PATHS:
+        if is_rate_limited():
+            RATE_LIMIT_EXCEEDED.labels(limit_type='api').inc()
+            logger.warning("rate_limit_exceeded", path=request.path)
+            return jsonify({
+                "error": "rate_limit_exceeded",
+                "retry_after_s": 60,
+            }), 429, {'Content-Type': 'application/json'}
+
+
+@app.after_request
+def add_rate_limit_headers(response):
+    """Adiciona headers de rate limit a todas as respostas de API."""
+    if request.path.startswith('/api/'):
+        headers = get_rate_limit_headers()
+        for key, value in headers.items():
+            response.headers[key] = value
+    return response
+
+
 @app.route('/api/health')
 def health():
     logger.debug("health_check")
     return jsonify({"status": "ok"})
+
+
+@app.route('/api/limits')
+def limits():
+    """Retorna os limites de taxa configurados e o saldo restante."""
+    from sandbox_config import APP_CONFIG as cfg
+    headers = get_rate_limit_headers()
+    return jsonify({
+        "runs_per_minute": cfg["runs_per_minute"],
+        "limit": int(headers["X-RateLimit-Limit"]),
+        "remaining": int(headers["X-RateLimit-Remaining"]),
+        "reset_at": headers["X-RateLimit-Reset"],
+    })
+
+
+@app.route('/api/compile', methods=['POST'])
+def compile_code():
+    """
+    Endpoint de compilacao SIMPLES → NASM → ELF.
+
+    Recebe codigo fonte SIMPLES, executa o pipeline de compilacao
+    e retorna o NASM gerado ou erros com linha/coluna.
+    """
+    from compiler import compile_source
+
+    data = request.get_json(silent=True)
+    if not data or "code" not in data:
+        return jsonify({"error": "campo 'code' obrigatorio"}), 400
+
+    source_code = data["code"]
+
+    # Valida tamanho maximo
+    from sandbox_config import APP_CONFIG
+    max_kb = APP_CONFIG["max_code_kb"]
+    if len(source_code.encode("utf-8")) > max_kb * 1024:
+        return jsonify({
+            "error": f"codigo excede o limite de {max_kb}KB"
+        }), 413
+
+    result = compile_source(source_code)
+
+    if result.success:
+        return jsonify({
+            "success": True,
+            "nasm": result.nasm_output,
+            "binary_path": result.binary_path,
+            "duration_s": round(result.duration_s, 3),
+        })
+    else:
+        return jsonify({
+            "success": False,
+            "errors": result.errors,
+            "nasm": result.nasm_output,
+            "duration_s": round(result.duration_s, 3),
+        })
 
 
 @app.route('/metrics')
