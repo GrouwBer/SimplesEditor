@@ -11,10 +11,10 @@ test.describe('Editor Monaco e Fluxo de Edicao', () => {
     await page.goto('/')
   })
 
-  test('botao Run esta presente na interface (placeholder)', async ({ page }) => {
+  test.fixme('botao Run esta presente na interface (placeholder)', async ({ page }) => {
     // Sprint 2: Botao Run mockado
     // Sprint 4: Botao Run funcional via WebSocket
-    // Por enquanto, verificamos que o layout suporta o botao
+    // TODO: Substituir por teste real com seletor [data-testid="run-button"]
     await expect(page.locator('#root')).toBeVisible()
   })
 
@@ -36,27 +36,20 @@ test.describe('Editor Monaco e Fluxo de Edicao', () => {
       // Se o Monaco ainda nao foi integrado, o teste verifica
       // que o layout basico esta pronto
       await expect(page.locator('#root')).toBeVisible()
-      console.log('Monaco Editor nao detectado - aguardando integracao (Sprint 2)')
+      test.info().annotations.push({ type: 'status', description: 'Monaco Editor nao detectado - aguardando integracao (Sprint 2)' })
     }
   })
 
-  test('fluxo de digitar codigo SIMPLES e verificar highlight', async ({ page }) => {
-    // Teste preparado para quando o Monaco estiver integrado com
-    // a linguagem 'simples' registrada via Monarch tokenizer
+  test.fixme('fluxo de digitar codigo SIMPLES e verificar highlight', async ({ page }) => {
+    // TODO: Implementar quando Monaco + tokenizer Monarch (#83, #84) estiverem mergeados
     await page.goto('/')
-
-    // Verifica que a pagina carrega
     await expect(page.locator('#root')).toBeVisible()
   })
 
-  test('fluxo de compilar codigo invalido exibe erros como markers', async ({ page }) => {
-    // Cenario: usuario escreve codigo SIMPLES invalido, clica Run,
-    // e ve erros de compilacao destacados no editor (Monaco markers)
-    //
+  test.fixme('fluxo de compilar codigo invalido exibe erros como markers', async ({ page }) => {
+    // TODO: Implementar quando Monaco markers (#87) estiver mergeado
     // Sprint 3: implementa este fluxo via POST /api/compile
     await page.goto('/')
-
-    // Verifica que a pagina esta pronta para receber markers de erro
     await expect(page.locator('#root')).toBeVisible()
   })
 })
