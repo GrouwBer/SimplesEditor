@@ -24,7 +24,6 @@ const RESULT_DISPLAY_MS = 3000  // tempo exibindo resultado antes de voltar a id
 // Logger condicional (apenas em desenvolvimento)
 const logDebug = (...args: unknown[]) => {
   if (import.meta.env.DEV) {
-    // eslint-disable-next-line no-console
     console.warn(...args)
   }
 }
