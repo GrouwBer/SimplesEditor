@@ -56,6 +56,59 @@ def health():
     return jsonify({"status": "ok"})
 
 
+@app.route('/api/compile', methods=['POST'])
+def compile_code():
+    """
+    Endpoint de compilacao SIMPLES → NASM → ELF.
+
+    Recebe codigo fonte SIMPLES, executa o pipeline de compilacao
+    e retorna o NASM gerado ou erros com linha/coluna.
+
+    Request body (JSON):
+        { "code": "programa ..." }
+
+    Resposta (200):
+        { "success": true, "nasm": "...", "binary_path": "...", ... }
+
+    Resposta (200 com erro de compilacao):
+        { "success": false, "errors": [...], "nasm": "..." }
+
+    Resposta (400):
+        { "error": "campo 'code' obrigatorio" }
+    """
+    from compiler import compile_source
+
+    data = request.get_json(silent=True)
+    if not data or "code" not in data:
+        return jsonify({"error": "campo 'code' obrigatorio"}), 400
+
+    source_code = data["code"]
+
+    # Valida tamanho maximo
+    max_kb = __import__('sandbox_config').APP_CONFIG["max_code_kb"]
+    if len(source_code.encode("utf-8")) > max_kb * 1024:
+        return jsonify({
+            "error": f"codigo excede o limite de {max_kb}KB"
+        }), 413
+
+    result = compile_source(source_code)
+
+    if result.success:
+        return jsonify({
+            "success": True,
+            "nasm": result.nasm_output,
+            "binary_path": result.binary_path,
+            "duration_s": round(result.duration_s, 3),
+        })
+    else:
+        return jsonify({
+            "success": False,
+            "errors": result.errors,
+            "nasm": result.nasm_output,
+            "duration_s": round(result.duration_s, 3),
+        })
+
+
 @app.route('/metrics')
 def metrics():
     """
