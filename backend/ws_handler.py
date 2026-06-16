@@ -9,9 +9,10 @@ Protocolo de mensagens (alinhado com frontend useExecution.ts):
 
 import json
 import os
+import re
+
 import signal
 import subprocess
-import tempfile
 import threading
 import time
 import uuid
@@ -28,6 +29,9 @@ from sandbox_config import APP_CONFIG, get_sandbox_run_kwargs
 
 # Logger obtido via funcao para evitar imports circulares
 logger = get_logger(__name__)
+
+# Margem de espera adicional apos o timeout para aguardar o container
+_CONTAINER_WAIT_GRACE_S = 5
 
 # Diretorio temporario para artefatos
 COMPILE_TMP = os.environ.get("COMPILE_TMP", "/tmp/simples-compile")
@@ -47,6 +51,8 @@ class WsRunHandler:
         self._process: subprocess.Popen | None = None
         self._container_id: str | None = None
         self._running = False
+        self._timed_out = False
+        self._exit_code: int | None = None
         self._lock = threading.Lock()
 
     # ---------------------------------------------------------------
@@ -78,6 +84,7 @@ class WsRunHandler:
                 try:
                     self._process.send_signal(signal.SIGTERM)
                     # Se nao morrer em 1s, SIGKILL
+
                     def force_kill():
                         time.sleep(1)
                         try:
@@ -278,9 +285,6 @@ class WsRunHandler:
     # Execucao no sandbox
     # ---------------------------------------------------------------
 
-    _timed_out = False
-    _exit_code: int | None = None
-
     def _run_binary(self, binary_path: str):
         """
         Executa o binario no sandbox Docker com streaming de I/O.
@@ -328,7 +332,7 @@ class WsRunHandler:
                 pass
 
             # Aguarda e pega exit code
-            exit_result = container.wait(timeout=APP_CONFIG["timeout"] + 5)
+            exit_result = container.wait(timeout=APP_CONFIG["timeout"] + _CONTAINER_WAIT_GRACE_S)
             exit_code = exit_result.get("StatusCode", -1)
             self._exit_code = exit_code
 
@@ -363,14 +367,14 @@ class WsRunHandler:
     @staticmethod
     def _extract_line(stderr: str, default: int = 0) -> int:
         """Extrai numero da linha de mensagem de erro."""
-        import re
+        
         m = re.search(r"(?:linha|line)\s*(\d+)", stderr, re.IGNORECASE)
         return int(m.group(1)) if m else default
 
     @staticmethod
     def _extract_column(stderr: str, default: int = 0) -> int:
         """Extrai numero da coluna de mensagem de erro."""
-        import re
+        
         m = re.search(r"(?:coluna|column|col)\s*(\d+)", stderr, re.IGNORECASE)
         return int(m.group(1)) if m else default
 
