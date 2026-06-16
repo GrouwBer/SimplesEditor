@@ -1,6 +1,6 @@
 Flask>=3.0.0
 flask-sock>=0.6.0
-gevent>=23.0.0
+gevent>=26.5.0
 gevent-websocket>=0.10.1
 gunicorn>=21.2.0
 structlog>=24.1.0
