@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import Editor from '@monaco-editor/react'
+import type { Monaco } from '@monaco-editor/react'
+import { SIMPLES_LANGUAGE_ID, simplesMonarchTokens } from './simplesLang'
 
 const DEFAULT_CODE = [
   'programa exemplo_soma',
@@ -11,6 +13,39 @@ const DEFAULT_CODE = [
   '  escreval resultado',
   'fim',
 ].join('\n')
+
+// Registra a linguagem SIMPLES e tema escuro no Monaco
+function registerSimplesLanguage(monaco: Monaco) {
+  // Registra a linguagem SIMPLES com tokenizer Monarch (27 palavras reservadas)
+  monaco.languages.register({ id: SIMPLES_LANGUAGE_ID })
+  monaco.languages.setMonarchTokensProvider(SIMPLES_LANGUAGE_ID, simplesMonarchTokens)
+
+  // Tema escuro customizado para SIMPLES
+  monaco.editor.defineTheme('simples-dark', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: 'keyword', foreground: '56b6c2', fontStyle: 'bold' },
+      { token: 'number', foreground: 'd19a66' },
+      { token: 'number.float', foreground: 'd19a66' },
+      { token: 'string', foreground: 'e5c07b' },
+      { token: 'comment', foreground: '98c379', fontStyle: 'italic' },
+      { token: 'operator', foreground: 'c678dd' },
+      { token: 'delimiter', foreground: 'abb2bf' },
+      { token: 'identifier', foreground: 'e06c75' },
+      { token: 'white', foreground: 'abb2bf' },
+    ],
+    colors: {
+      'editor.background': '#0d1117',
+      'editor.foreground': '#c9d1d9',
+      'editor.lineHighlightBackground': '#161b22',
+      'editor.selectionBackground': '#264f78',
+      'editorCursor.foreground': '#58a6ff',
+      'editorLineNumber.foreground': '#484f58',
+      'editorLineNumber.activeForeground': '#c9d1d9',
+    },
+  })
+}
 
 function App() {
   const [code, setCode] = useState<string>(DEFAULT_CODE)
@@ -34,6 +69,11 @@ function App() {
         setHealthColor('#ef4444')
       })
   }, [])
+
+  // Callback executado antes do Monaco montar
+  const handleBeforeMount = (monaco: Monaco) => {
+    registerSimplesLanguage(monaco)
+  }
 
   return (
     <div style={{
@@ -81,7 +121,7 @@ function App() {
         </div>
       </header>
 
-      {/* Main layout: Editor + NASM panel */}
+      {/* Main layout */}
       <main style={{
         flex: 1,
         display: 'flex',
@@ -108,10 +148,11 @@ function App() {
           <div style={{ flex: 1 }}>
             <Editor
               height="100%"
-              defaultLanguage="plaintext"
+              language={SIMPLES_LANGUAGE_ID}
               value={code}
               onChange={value => setCode(value ?? '')}
-              theme="vs-dark"
+              theme="simples-dark"
+              beforeMount={handleBeforeMount}
               options={{
                 fontSize: 14,
                 fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
@@ -127,7 +168,7 @@ function App() {
           </div>
         </section>
 
-        {/* NASM Output panel (placeholder — Sprint 3) */}
+        {/* NASM Output panel */}
         <aside style={{
           width: '40%',
           display: 'flex',
