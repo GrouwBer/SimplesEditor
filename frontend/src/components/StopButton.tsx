@@ -29,13 +29,16 @@ const IconSpinner = () => (
  * Botao Stop funcional (RF13)
  *
  * Comportamento:
- * - Estado idle: sem botao visivel
+ * - Estado idle: exibe borao Run (verde) → inicia execucao
  * - Estado compiling: exibe spinner + texto "Compilando..." (desabilitado)
- * - Estado executing: exibe botao Stop (vermelho) → envia {type: "stop"}
- * - Estado finished: sem botao visivel
+ * - Estado executing: exibe borao Stop (vermelho) → envia {type: "stop"}
+ * - Estado finished: exibe borao Run (verde) → pronto para nova execucao
  *
  * RF13: Ao clicar Stop, envia SIGTERM ao processo (backend),
  *       depois SIGKILL apos 1s. Tempo total ≤ 2s.
+ *
+ * PRD secao 12.2: "Ao clicar Stop: envia {type: 'stop'} ao servidor;
+ * UI volta a estado idle ao receber exit."
  */
 const StopButton: FC<StopButtonProps> = ({ state, onStop }) => {
   if (state === 'compiling') {
@@ -59,11 +62,11 @@ const StopButton: FC<StopButtonProps> = ({ state, onStop }) => {
         title="Interromper execucao (SIGTERM → SIGKILL)"
         style={styles.buttonStop}
         onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = '#dc2626'
+          e.currentTarget.style.backgroundColor = '#dc2626' // red-600
           e.currentTarget.style.transform = 'scale(1.05)'
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = '#ef4444'
+          e.currentTarget.style.backgroundColor = '#ef4444' // red-500
           e.currentTarget.style.transform = 'scale(1)'
         }}
       >
@@ -73,7 +76,7 @@ const StopButton: FC<StopButtonProps> = ({ state, onStop }) => {
     )
   }
 
-  // idle ou finished
+  // idle ou finished — o botao Run (verde) e renderizado pelo componente Toolbar
   return null
 }
 
@@ -83,7 +86,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '8px',
     padding: '8px 20px',
-    backgroundColor: '#ef4444',
+    backgroundColor: '#ef4444', // red-500
     color: '#ffffff',
     border: 'none',
     borderRadius: '8px',
@@ -98,7 +101,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '8px',
     padding: '8px 20px',
-    backgroundColor: '#6366f1',
+    backgroundColor: '#6366f1', // indigo-500
     color: '#c7d2fe',
     border: 'none',
     borderRadius: '8px',

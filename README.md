@@ -1,37 +1,160 @@
-# SimplesEditor
+# Simples Editor
 
-SimplesEditor — editor simples para estudos e demonstrações.
+Plataforma web para ensino de programacao com a linguagem SIMPLES — escreva, compile e execute codigo direto no navegador, sem instalar nada.
 
-## Visão geral
-Projeto demonstração com estrutura mínima para permitir colaboração (Sprint 1).
+🚧 [EM BREVE] — Screenshots e demo video serao adicionados apos merge dos PRs de documentacao.
 
-## Como rodar (exemplos)
-- Node.js: 
-  - Instalar Node.js v18+
-  - npm ci
-  - npm start
-- Python (exemplo):
-  - python -m pip install -r requirements.txt
-  - python main.py
+---
+
+## Funcionalidades
+
+- **Editor Monaco** com syntax highlight customizado para 27 palavras-chave da linguagem SIMPLES
+- **Tema dark** profissional (`simples-dark`) com cores otimizadas para leitura de codigo
+- **Layout 3 paineis** resizable: editor, saida NASM, terminal interativo
+- **Compilador integrado**: `simplesc` traduz SIMPLES → NASM → executavel
+- **Execucao interativa**: programas com `leia` funcionam via WebSocket + PTY
+- **Sandbox seguro**: execucao isolada em container Docker (`--cap-drop=ALL`, `--read-only`, `--network=none`)
+- **CI/CD**: GitHub Actions com 4 jobs paralelos (frontend, backend, docker-stack, smoke)
+
+---
+
+## Screenshots
+
+> Screenshots reais serao adicionadas apos captura. Consulte os PRs de documentacao para o progresso.
+
+| Cena | Descricao |
+|---|---|
+| 🚧 Editor | Syntax highlight com 27 palavras-chave, numeros, strings, comentarios |
+| 🚧 Painel NASM | Saida do compilador `simplesc` no painel direito |
+| 🚧 Terminal | xterm.js com comunicacao bidirecional via WebSocket (`leia`) |
+| 🚧 Erros | Markers vermelhos no Monaco Editor |
+| 🚧 CI/CD | GitHub Actions: 4 jobs paralelos |
+
+---
+
+## Demo Video
+
+🚧 [EM BREVE] — Roteiro de gravacao em [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) (em outro PR).
+
+---
+
+## Arquitetura
+
+```
+┌─────────────┐    ┌──────────┐    ┌────────────────┐
+│  Navegador   │────│  Nginx   │────│  Frontend (React)│
+│  (Monaco,    │    │  :80/443 │    │  Monaco Editor   │
+│   xterm.js)  │    └──────────┘    └────────────────┘
+└─────────────┘                          │
+                                         │ REST + WebSocket
+                                  ┌──────┴──────────┐
+                                  │  Backend (Flask) │
+                                  │  + simplesc      │
+                                  └──────┬──────────┘
+                                         │ docker-py
+                                  ┌──────┴──────────┐
+                                  │  Sandbox Docker  │
+                                  │  (QEMU i686)     │
+                                  └─────────────────┘
+```
+
+| Componente | Tecnologia |
+|---|---|
+| Frontend | React 18 + TypeScript + Monaco Editor + xterm.js |
+| Backend | Flask 3 + flask-sock + gevent + gunicorn |
+| Compilador | simplesc (C) → NASM → ld (i686) |
+| Proxy | Nginx 1.25 (Alpine) com TLS |
+| Sandbox | Docker + QEMU user-static |
+| CI/CD | GitHub Actions (4 jobs paralelos) |
+| Auth | Supabase |
+
+---
+
+## Como rodar
+
+### Pre-requisitos
+
+- Docker e Docker Compose
+- Node.js 18+ (apenas para desenvolvimento local)
+
+### Desenvolvimento (hot-reload)
+
+```bash
+git clone https://github.com/GrouwBer/SimplesEditor.git
+cd SimplesEditor
+docker compose -f docker-compose.yml -f docker-compose.override.yml up --build
+```
+
+Acesse: http://localhost:8080
+
+### Producao
+
+```bash
+docker compose -f docker-compose.yml up -d --build
+```
+
+Acesse: http://localhost:80 (HTTP) ou https://localhost:443 (HTTPS)
+
+### Testes
+
+```bash
+# Backend
+cd backend && python -m pytest -q
+
+# Frontend
+cd frontend && npm ci && npm run lint && npm test
+```
+
+---
+
+## Documentacao
+
+| Documento | Descricao | Status |
+|---|---|---|
+| [SPRINTS.md](SPRINTS.md) | Planejamento das 6 sprints | ✅ |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Guia de contribuicao | ✅ |
+| [docs/INSTRUCTIONS_DEV.md](docs/INSTRUCTIONS_DEV.md) | Instrucoes para desenvolvimento | ✅ |
+
+Documentacao em outros PRs (links ficarao ativos apos merge):
+
+| Documento | Descricao | PR |
+|---|---|---|
+| PROGRESS.md | Checklist de progresso das issues | #67 |
+| docs/RETROSPECTIVA.md | Retrospectiva da equipe | #67 |
+| docs/DEPLOY.md | Guia de deploy Oracle Cloud | #69 |
+| docs/DEMO_SCRIPT.md | Roteiro para video de demonstracao | #71 |
+| docs/APRESENTACAO.md | Roteiro da apresentacao final | #68 |
+
+---
+
+## Stack
+
+- **Frontend**: React, TypeScript, Monaco Editor, xterm.js, Vite
+- **Backend**: Python, Flask, flask-sock, gevent, gunicorn, structlog
+- **Infra**: Docker, Docker Compose, Nginx, GitHub Actions
+- **Seguranca**: Supabase Auth, sandbox Docker (planejado: rate limiting, Prometheus)
+
+---
+
+## Seguranca
+
+> **Aviso**: Nunca commitar secrets (chaves, tokens, senhas) no repositorio.
+> Use o arquivo `.env` (incluido no `.gitignore`) para variaveis de ambiente locais.
+> Consulte `.env.example` para as variaveis necessarias.
+
+---
 
 ## Contribuindo
-Veja CONTRIBUTING.md para orientações sobre como abrir issues e PRs.
 
-## Screenshots / GIFs
-Colocar imagens em docs/screenshots/ e substituir os placeholders abaixo.
+1. Crie uma branch: `git checkout -b feat/minha-feature`
+2. Commit: `git commit -m "feat: descricao (closes #N)"`
+3. Push: `git push -u origin feat/minha-feature`
+4. Abra um PR para `dev`
 
-![placeholder](docs/screenshots/placeholder.png)
+Veja [CONTRIBUTING.md](CONTRIBUTING.md) para mais detalhes.
 
-## Licença
-MIT
+---
 
-## Critérios de aceite
-- [ ] O ajuste de infraestrutura "estruturar repositorio no GitHub e README inicial" está concluído e reproduzível no repositório.
-- [ ] Sprint 1 mantém a base do repositório pronta para o restante do time.
-- [ ] O fluxo colaborativo de PR fica exercitado e sem bloqueios.
-- [ ] README.md completo com GIFs/screenshots.
-- [ ] O material final fica pronto para apresentação e revisão da turma.
+## Licenca
 
-## Security
-Do not commit secrets (tokens, passwords). CI checks run on push/PR. Ensure local tests pass before opening a PR.
-
+MIT © 2026 Simples Editor Team

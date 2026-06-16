@@ -17,8 +17,17 @@ export interface WsMessage {
 // Estados da maquina de execucao (PRD secao 12.3)
 export type ExecutionState = 'idle' | 'compiling' | 'executing' | 'finished'
 
-// Tempo maximo para o Stop (SIGTERM → SIGKILL)
+// Constantes de tempo
 const STOP_HARD_MS = 2000    // 2s maximo total (criterio de aceite)
+const RESULT_DISPLAY_MS = 3000  // tempo exibindo resultado antes de voltar a idle
+
+// Logger condicional (apenas em desenvolvimento)
+const logDebug = (...args: unknown[]) => {
+  if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.warn(...args)
+  }
+}
 
 interface StopCommand {
   type: 'stop'
@@ -50,7 +59,7 @@ export function useExecution(wsRef: React.MutableRefObject<WebSocket | null>) {
   const sendRun = useCallback((code: string) => {
     const ws = wsRef.current
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-      console.warn('[useExecution] WebSocket nao conectado')
+      logDebug('[useExecution] WebSocket nao conectado')
       return
     }
 
@@ -66,7 +75,7 @@ export function useExecution(wsRef: React.MutableRefObject<WebSocket | null>) {
   const sendStop = useCallback(() => {
     const ws = wsRef.current
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-      console.warn('[useExecution] WebSocket nao conectado para enviar Stop')
+      logDebug('[useExecution] WebSocket nao conectado para enviar Stop')
       return
     }
 
@@ -77,7 +86,7 @@ export function useExecution(wsRef: React.MutableRefObject<WebSocket | null>) {
     // Timeout de seguranca: se o backend nao responder em 2s,
     // considera que a execucao foi interrompida de qualquer forma
     stopTimerRef.current = setTimeout(() => {
-      console.warn('[useExecution] Stop timeout — forcando estado idle')
+      logDebug('[useExecution] Stop timeout — forçando estado idle')
       setState('idle')
       setExitCode(-9) // SIGKILL
     }, STOP_HARD_MS)
@@ -92,6 +101,7 @@ export function useExecution(wsRef: React.MutableRefObject<WebSocket | null>) {
 
       case 'asm_generated':
         // Ainda compilando (montagem + link)
+        // O estado so muda para executing quando exec_started chegar
         break
 
       case 'exec_started':
@@ -115,7 +125,7 @@ export function useExecution(wsRef: React.MutableRefObject<WebSocket | null>) {
           setDurationMs(msg.duration_ms)
         }
         // Volta para idle apos exibir resultado
-        setTimeout(() => setState('idle'), 3000)
+        setTimeout(() => setState('idle'), RESULT_DISPLAY_MS)
         break
 
       case 'timeout':
@@ -125,7 +135,7 @@ export function useExecution(wsRef: React.MutableRefObject<WebSocket | null>) {
         if (typeof msg.limit_s === 'number') {
           setDurationMs(msg.limit_s * 1000)
         }
-        setTimeout(() => setState('idle'), 3000)
+        setTimeout(() => setState('idle'), RESULT_DISPLAY_MS)
         break
 
       case 'stdout':
