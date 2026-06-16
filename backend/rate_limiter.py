@@ -11,7 +11,7 @@ import threading
 from typing import Callable
 from functools import wraps
 
-from flask import request, jsonify, g, abort
+from flask import request, jsonify, g
 
 from sandbox_config import APP_CONFIG
 

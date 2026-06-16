@@ -1,8 +1,8 @@
-from flask import Flask, jsonify, request, abort, g
+from flask import Flask, jsonify, request, abort
 import os
 from prometheus_client import Counter, Gauge, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from logging_config import setup_logging, get_logger
-from rate_limiter import is_rate_limited, get_rate_limit_headers, reset_rate_limits
+from rate_limiter import is_rate_limited, get_rate_limit_headers
 
 # Inicializar logs estruturados
 setup_logging()
