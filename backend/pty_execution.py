@@ -185,10 +185,11 @@ class PtyExecutionStrategy:
         """
         if not self._sock or not self._running:
             return
-        try:
-            self._sock.sendall(data.encode("utf-8"))
-        except Exception as e:
-            logger.error("pty_stdin_error", error=str(e))
+        with self._lock:
+            try:
+                self._sock.sendall(data.encode("utf-8"))
+            except Exception as e:
+                logger.error("pty_stdin_error", error=str(e))
 
     def read_loop(self) -> None:
         """
@@ -243,8 +244,9 @@ class PtyExecutionStrategy:
         except Exception as e:
             logger.error("pty_read_loop_error", error=str(e))
         finally:
-            self._running = False
-            self._cleanup()
+            with self._lock:
+                self._running = False
+                self._cleanup()
 
             # Notifica saida
             if self._exit_callback:
@@ -258,28 +260,29 @@ class PtyExecutionStrategy:
         """
         logger.info("pty_stop_requested")
 
-        if not self._container:
-            self._running = False
-            return
-
-        try:
-            # SIGTERM
-            self._container.exec_run(
-                "kill -TERM 1 2>/dev/null; exit 0",
-                user="root",
-            )
-            time.sleep(1)
-
-            # Verifica se ainda esta rodando
-            self._container.reload()
-            if self._container.status == "exited":
+        with self._lock:
+            if not self._container:
+                self._running = False
                 return
 
-            # SIGKILL
-            self._container.kill()
+            try:
+                # SIGTERM
+                self._container.exec_run(
+                    "kill -TERM 1 2>/dev/null; exit 0",
+                    user="root",
+                )
+                time.sleep(1)
 
-        except Exception as e:
-            logger.error("pty_stop_error", error=str(e))
+                # Verifica se ainda esta rodando
+                self._container.reload()
+                if self._container.status == "exited":
+                    return
+
+                # SIGKILL
+                self._container.kill()
+
+            except Exception as e:
+                logger.error("pty_stop_error", error=str(e))
 
     # ---------------------------------------------------------------
     # Metodos internos
