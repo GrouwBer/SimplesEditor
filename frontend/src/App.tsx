@@ -88,10 +88,14 @@ function App() {
     wsRef.current = ws
 
     return () => {
-      ws.close()
+      try {
+        ws.close()
+      } catch (e) {
+        console.error('[App] Erro ao fechar WebSocket:', e)
+      }
       wsRef.current = null
     }
-  }, [])
+  }, [handleMessage])
 
   useEffect(() => {
     fetch('/api/health')
