@@ -10,21 +10,25 @@ container sandbox, aplicando:
 """
 
 import os
-import signal
-import threading
 import time
 from typing import NamedTuple
 
 import docker
-from docker.errors import DockerException, ContainerError, APIError
+from docker.errors import DockerException
 
 from app import (
     EXECUTIONS_TOTAL,
     EXECUTION_DURATION,
     ACTIVE_CONTAINERS,
-    logger,
 )
+from logging_config import get_logger
 from sandbox_config import APP_CONFIG, get_sandbox_run_kwargs
+
+logger = get_logger(__name__)
+
+# Margens de timeout
+_STOP_TIMEOUT_MARGIN_S = 2
+_MAX_STOP_TIMEOUT_S = 14
 
 
 class ExecResult(NamedTuple):
@@ -77,7 +81,7 @@ def run_code_in_sandbox(
 
     # O stop_timeout do container precisa ser maior que o exec timeout
     # para dar tempo do SIGTERM ser processado antes do SIGKILL
-    stop_timeout = min(timeout + 2, 14)
+    stop_timeout = min(timeout + _STOP_TIMEOUT_MARGIN_S, _MAX_STOP_TIMEOUT_S)
 
     client = _get_docker_client()
     run_kwargs = get_sandbox_run_kwargs()
@@ -101,7 +105,7 @@ def run_code_in_sandbox(
         # Cria e inicia o container
         container = client.containers.run(
             image=APP_CONFIG["sandbox_image"],
-            command=["/sandbox/prog"],
+            command=[binary_path],
             detach=True,
             **run_kwargs,
         )
