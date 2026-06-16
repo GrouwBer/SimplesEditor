@@ -1,152 +1,105 @@
-# Documentacao de Incidentes — Sandbox
+# Plano de Resposta a Incidentes
 
-> Procedimentos para resposta a incidentes de seguranca no sandbox do Simples Editor.
+> **Última revisão:** 2026-06-15
+>
+> Documento de referencia para resposta a incidentes de seguranca no SimplesEditor.
+> Sprint 5 — Hardening & Observability (PRD secao 11.6, Threat model).
 
----
+## Cenario 1: Aluno escapa do sandbox
 
-## Visao geral
+**Vetor**: Binario compilado consegue acessar recursos fora do container sandbox.
 
-O Simples Editor executa codigo de alunos em containers Docker isolados. Cada execucao roda em um container fresh com:
-
-- `--cap-drop=ALL` — todas as capacidades do kernel removidas
-- `--read-only` — filesystem somente leitura
-- `--network=none` — sem acesso a rede
-- `mem_limit="64m"` (docker-py) / `--memory=64m` (CLI) — limite de memoria
-- `--stop-timeout=12` — kill forcado apos timeout
-- `cpu_quota=50000` (docker-py) / `--cpus=0.5` (CLI) — limite de CPU
-- Rate limit: 30 execucoes/minuto por usuario (planejado — vide SPRINTS.md)
-
----
-
-## Classificacao de Incidentes
-
-### Nivel 1 — Tentativa de Escape (BAIXO)
-
-**Sintomas**:
-- Log mostra tentativa de escrita em `/` (filesystem read-only)
-- Erro: `Read-only file system`
-- Tentativa de `fork()` ou `clone()`
+**Mitigacoes ativas**:
+- `--cap-drop=ALL`: Sem capabilities Linux (nao pode montar filesystems, usar raw sockets, etc.)
+- `--security-opt=no-new-privileges`: Bloqueia escalacao de privilegios via setuid
+- `--user=65534:65534` (nobody): Sem acesso root dentro do container
+- `--network=none`: Sem rede para exfiltracao
+- `--read-only`: Filesystem imutavel
+- Seccomp profile padrao do Docker: Bloqueia syscalls perigosas (clone, mount, etc.)
 
 **Resposta**:
-1. Nao requer acao imediata — o sandbox bloqueia automaticamente
-2. Registrar no log com `WARNING` e detalhes do usuario
-3. Se o mesmo usuario repetir > 5 vezes em 1 hora, notificar administrador
+1. **Deteccao**: Logs estruturados (JSON) mostrarao qualquer saida anomala do container. Monitore `/metrics` para `sandbox_escape_attempts_total`.
+2. **Contencao imediata**: O container e destruido automaticamente ao fim da execucao (`--rm`). Se necessario, `docker kill` no container ativo.
+3. **Investigacao**: Inspecione os logs do backend (`structlog`) filtrando pelo `user_id` e `execution_id`. Verifique o codigo submetido que causou o escape.
+4. **Correcao**: Atualize o seccomp profile para bloquear a syscall especifica usada no escape. Atualize a imagem `simples-runner` se necessario.
+5. **Prevencao**: Adicione teste de regressao em `scripts/audit_sandbox.sh` para o vetor especifico.
 
-### Nivel 2 — Consumo Excessivo de Recursos (MEDIO)
+## Cenario 2: Fork bomb / DoS por consumo de recursos
 
-**Sintomas**:
-- Timeout de execucao (10s wall-clock)
-- Consumo de CPU > 80% por > 30s
-- Memoria proxima do limite (64MB)
+**Vetor**: Programa SIMPLES gera muitos processos filhos (fork bomb) ou aloca memoria excessiva.
+
+**Mitigacoes ativas**:
+- `--pids-limit=64`: Maximo de 64 processos no container
+- `--memory=128m --memory-swap=128m`: Limite rigido de memoria
+- `--cpus=0.5`: Meia CPU, sem monopolizar o host
 
 **Resposta**:
-1. O rate limiter ja bloqueia apos 30 exec/min
-2. Verificar se ha multiplos usuarios abusando simultaneamente
-3. Ajustar `--memory` ou `--cpus` se necessario
-4. Bloquear usuario temporariamente via Supabase Auth se abuso persistente
+1. **Deteccao**: O Docker OOM Killer encerra o container automaticamente ao exceder 128 MB. Logs mostrarao `exit_code=137` (SIGKILL por OOM).
+2. **Contencao**: Automatica — o container e removido apos timeout ou OOM.
+3. **Investigacao**: Verifique o codigo submetido. Se for fork bomb intencional, considere reportar ao professor.
+4. **Prevencao**: Ajuste `--pids-limit` e `--memory` se necessario. Monitore metricas `sandbox_oom_total`.
 
-### Nivel 3 — Escape Bem-Sucedido (CRITICO)
+## Cenario 3: Exfiltracao de dados via codigo
 
-**Sintomas**:
-- Container conseguiu acessar rede externa
-- Processo escapou do container (visivel no host)
-- Acesso a arquivos fora do container
-- Conexao de rede estabelecida para fora
+**Vetor**: Aluno tenta enviar dados para servidor externo via syscalls de rede no codigo SIMPLES.
 
-**Resposta imediata**:
-1. **Derrubar o servico**: `docker compose down`
-2. **Isolar a VM**: desconectar da rede via console Oracle Cloud
-3. **Coletar evidencias**:
-   ```bash
-   docker logs <container_id> > incident_$(date +%s).log
-   journalctl -u docker --since "10 minutes ago" > docker_$(date +%s).log
-   dmesg | tail -100 > dmesg_$(date +%s).log
-   ```
-4. **Analisar o payload**: qual codigo causou o escape?
-5. **Corrigir a vulnerabilidade**: revisar configuracoes Docker, kernel
-6. **Restaurar servico**: apos correcao, rebuild e redeploy
-7. **Post-mortem**: documentar em `docs/INCIDENTS.md#historico`
+**Mitigacoes ativas**:
+- `--network=none`: Container nao tem nenhuma interface de rede
+- Syscalls de rede (`socket`, `connect`, `sendto`) sao bloqueadas pela falta de rede + seccomp
 
-### Nivel 4 — Comprometimento de Dados (CRITICO)
+**Resposta**:
+1. **Deteccao**: Chamadas de rede falham silenciosamente (errno apropriado). O aluno vera erro no terminal.
+2. **Contencao**: Automatica — sem rede, sem exfiltracao possivel.
+3. **Investigacao**: Nao necessario — o vetor e mitigado em 100% pelo `--network=none`.
 
-**Sintomas**:
-- Acesso ao banco de dados Supabase nao autorizado
-- Vazamento de `SUPABASE_JWT_SECRET` ou outras secrets
-- Dados de usuarios acessados indevidamente
+## Cenario 4: Rate limit excedido (abuso de execucoes)
 
-**Resposta imediata**:
-1. **Rotacionar todas as secrets**: Supabase JWT, API keys, tokens
-2. **Invalidar sessoes**: revogar todos os tokens JWT ativos
-3. **Notificar usuarios afetados** (se aplicavel)
-4. **Auditar logs** do Supabase para identificar escopo do vazamento
-5. **Post-mortem** obrigatorio
+**Vetor**: Aluno ou atacante dispara mais de 30 execucoes/minuto.
 
----
+**Mitigacoes ativas**:
+- Rate limit de 30 execucoes/minuto por `user_id`
+- Rate limit de 120 execucoes/minuto por IP
 
-## Monitoramento
+**Resposta**:
+1. **Deteccao**: Backend retorna HTTP 429 `{error: "rate_limit_exceeded", retry_after_s: N}`.
+2. **Contencao**: O rate limiter bloqueia automaticamente por 1 minuto.
+3. **Investigacao**: Verifique logs de rate limiting (`structlog` event `rate_limit_hit`). Se for abuso intencional, considere bloquear o `user_id` temporariamente.
+4. **Prevencao**: Ajuste os limites em `RUNS_PER_MINUTE` se necessario.
 
-### Metricas Prometheus (`/metrics`)
+## Cenario 5: JWT comprometido
 
-- `simples_executions_total{status}` — total de execucoes (labels: success, error, timeout)
-- `simples_execution_duration_seconds` — duracao das execucoes (histograma)
-- `simples_compilations_total{status}` — total de compilacoes (labels: success, error)
-- `simples_active_containers` — containers sandbox ativos no momento (Gauge)
+**Vetor**: Token JWT de um aluno e roubado (ex.: exposto em log, compartilhado acidentalmente).
 
-### Alertas recomendados
+**Mitigacoes ativas**:
+- JWT expira em 1 hora (configuracao padrao Supabase)
+- Backend valida JWT em toda conexao WebSocket e request REST
+- Rate limit por user_id limita dano mesmo com token valido
 
-| Metrica | Limiar | Acao |
-|---|---|---|
-| `simples_executions_total{status="timeout"}` | > 10/min | Verificar abuso |
-| `simples_active_containers` | > 20 | Possivel fork bomb |
-| `simples_execution_duration_seconds` (p99) | > 8s | Ajustar timeout |
+**Resposta**:
+1. **Deteccao**: Pico anormal de execucoes para um `user_id` especifico (detectavel via `/metrics`).
+2. **Contencao**: O token expira automaticamente em 1h. Se urgente, revogue o token no Supabase Auth dashboard.
+3. **Investigacao**: Verifique logs do backend filtrando pelo `user_id`. Identifique origem do vazamento (log exposto? compartilhamento?).
+4. **Prevencao**: Eduque alunos sobre seguranca de tokens. Considere reduzir tempo de expiracao do JWT para 30 min.
 
-### Logs
+## Contatos de Emergencia
 
-Logs estruturados em JSON (structlog) incluem:
-```json
-{
-  "event": "sandbox_exec",
-  "user_id": "...",
-  "container_id": "...",
-  "duration_ms": 1234,
-  "exit_code": 0,
-  "level": "info",
-  "timestamp": "..."
-}
-```
+| Papel | Contato |
+|-------|---------|
+| Maintainer do repositorio | @GrouwBer |
+| Responsavel pela seguranca | @Jkvzin |
+| Professor da disciplina | IFSULDEMINAS — Campus Pocos de Caldas |
 
----
+## Procedimento de Notificacao
 
-## Checklist de Resposta Rapida
-
-- [ ] Identificar nivel do incidente (1-4)
-- [ ] Coletar logs do container: `docker logs <id>`
-- [ ] Coletar logs do sistema: `journalctl`, `dmesg`
-- [ ] Verificar metricas Prometheus
-- [ ] Bloquear usuario se necessario (Supabase Auth)
-- [ ] Se nivel 3-4: `docker compose down` imediatamente
-- [ ] Se nivel 3-4: rotacionar secrets
-- [ ] Documentar no historico abaixo
+1. Abra uma issue no GitHub com label `security` e `incident`
+2. Descreva: o que aconteceu, quando, qual user_id afetado, impacto
+3. Se dados de outros alunos foram potencialmente expostos, notifique o professor imediatamente
+4. Apos resolucao, documente o incidente neste arquivo na secao "Historico de Incidentes"
 
 ---
 
 ## Historico de Incidentes
 
-> Registrar cada incidente real com data, nivel, descricao e resolucao.
-
-### Template
-
-```markdown
-### [DATA] — [TITULO]
-- **Nivel**: [1-4]
-- **Usuario**: [ID ou "anonimo"]
-- **Descricao**: [O que aconteceu]
-- **Payload**: [Codigo que causou o incidente]
-- **Duracao**: [Tempo ate resolucao]
-- **Resolucao**: [O que foi feito]
-- **Licoes**: [O que aprendemos]
-```
-
-### Incidentes Registrados
-
-*Nenhum incidente real registrado ate o momento. O sandbox tem bloqueado todas as tentativas de escape com sucesso.*
+| Data | Incidente | Severidade | Resolucao | Licao Aprendida |
+|------|-----------|------------|-----------|-----------------|
+| — | Nenhum incidente registrado | — | — | — |
