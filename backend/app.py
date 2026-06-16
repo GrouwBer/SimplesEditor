@@ -9,6 +9,10 @@ logger = get_logger(__name__)
 
 app = Flask(__name__)
 
+# Registrar blueprint de autenticacao
+from auth import auth_bp
+app.register_blueprint(auth_bp)
+
 # Metricas Prometheus — prefixo `simples_` evita colisao com outras apps
 
 # Contador de execucoes por status (success, error, timeout)
