@@ -3,7 +3,6 @@ import { useState, useCallback, useRef } from 'react'
 // Logger condicional (apenas em desenvolvimento)
 const logDebug = (...args: unknown[]) => {
   if (import.meta.env.DEV) {
-    // eslint-disable-next-line no-console
     console.warn(...args)
   }
 }
