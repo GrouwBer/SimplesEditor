@@ -75,13 +75,13 @@
 
 - [ ]  Botão **Stop** funcional (envia `{type: "stop"}` → SIGTERM → SIGKILL)
 - [ ]  Timeout de execução wall-clock (10s) com `asyncio.wait_for`
-- [ ]  Hard limit Docker (`--stop-timeout=12`)
-- [ ]  `--cap-drop=ALL`, `--read-only`, `--network=none`, cgroups configurados
+- [x]  Hard limit Docker (`--stop-timeout=12`)
+- [x]  `--cap-drop=ALL`, `--read-only`, `--network=none`, cgroups configurados
 - [ ]  Rate limit (30 execuções/min/user) com `flask-limiter`
-- [ ]  Logs estruturados JSON (`structlog`)
-- [ ]  Métricas Prometheus em `/metrics` (interno apenas)
+- [x]  Logs estruturados JSON (`structlog`)
+- [x]  Métricas Prometheus em `/metrics` (interno apenas)
 - [ ]  Audit do sandbox: tentativa de escrever em `/`, fork bomb, network — todas bloqueadas
-- [ ]  Documentação de incidente (`docs/INCIDENTS.md`) — o que fazer se um aluno escapar
+- [x]  Documentação de incidente (`docs/INCIDENTS.md`) — o que fazer se um aluno escapar
 
 **Definition of Done**: code review de segurança feito por outro grupo. Loop infinito é interrompido em ≤11s. Stop interrompe em ≤2s.
 
@@ -93,12 +93,12 @@
 
 - [ ]  Testes E2E com Playwright (login, edit, run, stdin, stop, timeout)
 - [ ]  Cobertura de testes backend ≥ 70% (`pytest --cov`)
-- [ ]  [README.md](http://README.md) completo com GIFs/screenshots
+- [x]  [README.md](http://README.md) completo com GIFs/screenshots
 - [ ]  Vídeo de demonstração de 2-3 min (`docs/demo.mp4`)
 - [ ]  **(Opcional, +1.0 ponto)** Deploy em Oracle Cloud Ampere A1 com TLS válido
 - [ ]  **(Opcional)** Domínio próprio (`*.edu.br`) apontando pro IP
 - [ ]  Apresentação final preparada (slides ou Notion)
-- [ ]  Retrospectiva da equipe (o que aprendemos)
+- [x]  Retrospectiva da equipe (o que aprendemos)
 ## Sprint 1 - Foundation & Auth
 - Estruturar repositório no GitHub e README inicial
 - Exercitar fluxo de PR

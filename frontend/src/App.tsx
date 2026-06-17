@@ -1,8 +1,104 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import Editor from '@monaco-editor/react'
+import type { Monaco } from '@monaco-editor/react'
+import { SIMPLES_LANGUAGE_ID, simplesMonarchTokens } from './simplesLang'
+import { useExecution } from './hooks/useExecution'
+
+const DEFAULT_CODE = [
+  'programa exemplo_soma',
+  '  inteiro a, b, resultado',
+  'inicio',
+  '  leia a',
+  '  leia b',
+  '  resultado <- a + b',
+  '  escreval resultado',
+  'fim',
+].join('\n')
+
+// Registra a linguagem SIMPLES e tema escuro no Monaco
+function registerSimplesLanguage(monaco: Monaco) {
+  // Registra a linguagem SIMPLES com tokenizer Monarch (27 palavras reservadas)
+  monaco.languages.register({ id: SIMPLES_LANGUAGE_ID })
+  monaco.languages.setMonarchTokensProvider(SIMPLES_LANGUAGE_ID, simplesMonarchTokens)
+
+  // Tema escuro customizado para SIMPLES
+  monaco.editor.defineTheme('simples-dark', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: 'keyword', foreground: '56b6c2', fontStyle: 'bold' },
+      { token: 'number', foreground: 'd19a66' },
+      { token: 'number.float', foreground: 'd19a66' },
+      { token: 'string', foreground: 'e5c07b' },
+      { token: 'comment', foreground: '98c379', fontStyle: 'italic' },
+      { token: 'operator', foreground: 'c678dd' },
+      { token: 'delimiter', foreground: 'abb2bf' },
+      { token: 'identifier', foreground: 'e06c75' },
+      { token: 'white', foreground: 'abb2bf' },
+    ],
+    colors: {
+      'editor.background': '#0d1117',
+      'editor.foreground': '#c9d1d9',
+      'editor.lineHighlightBackground': '#161b22',
+      'editor.selectionBackground': '#264f78',
+      'editorCursor.foreground': '#58a6ff',
+      'editorLineNumber.foreground': '#484f58',
+      'editorLineNumber.activeForeground': '#c9d1d9',
+    },
+  })
+}
 
 function App() {
+  const [code, setCode] = useState<string>(DEFAULT_CODE)
   const [healthStatus, setHealthStatus] = useState<string>('checking...')
   const [healthColor, setHealthColor] = useState<string>('#e2e8f0')
+  const [nasmOutput, setNasmOutput] = useState<string | null>(null)
+
+  // WebSocket connection
+  const wsRef = useRef<WebSocket | null>(null)
+  const { state, sendRun, sendStop, handleMessage } = useExecution(wsRef)
+
+  // Sprint 2 — botao Run mockado (fallback)
+  const [runState, setRunState] = useState<'idle' | 'compiling' | 'done'>('idle')
+
+  useEffect(() => {
+    // Conecta WebSocket
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const wsUrl = `${protocol}//${window.location.host}/ws/run`
+    const ws = new WebSocket(wsUrl)
+
+    ws.onopen = () => {
+      console.log('[App] WebSocket conectado')
+    }
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data)
+        handleMessage(msg)
+        // Atualiza NASM output quando disponivel
+        if (msg.asm) {
+          setNasmOutput(msg.asm)
+        }
+      } catch (e) {
+        console.error('[App] Erro ao processar mensagem WS:', e)
+      }
+    }
+
+    ws.onclose = () => {
+      console.log('[App] WebSocket desconectado')
+    }
+
+    wsRef.current = ws
+
+    return () => {
+      try {
+        ws.close()
+      } catch (e) {
+        console.error('[App] Erro ao fechar WebSocket:', e)
+      }
+      wsRef.current = null
+    }
+  }, [handleMessage])
 
   useEffect(() => {
     fetch('/api/health')
@@ -10,17 +106,39 @@ function App() {
       .then(data => {
         if (data.status === 'ok') {
           setHealthStatus('ONLINE')
-          setHealthColor('#10b981') // emerald-500
+          setHealthColor('#10b981')
         } else {
-          setHealthStatus('UNEXPECTED RESPONSE')
-          setHealthColor('#f59e0b') // amber-500
+          setHealthStatus('UNEXPECTED')
+          setHealthColor('#f59e0b')
         }
       })
       .catch(() => {
         setHealthStatus('OFFLINE')
-        setHealthColor('#ef4444') // red-500
+        setHealthColor('#ef4444')
       })
   }, [])
+
+  // Callback executado antes do Monaco montar
+  const handleBeforeMount = (monaco: Monaco) => {
+    registerSimplesLanguage(monaco)
+  }
+
+  // Sprint 2 — Run mockado: simula compilacao sem backend real
+  const handleRun = () => {
+    if (runState !== 'idle') return
+    setRunState('compiling')
+    setTimeout(() => {
+      setRunState('done')
+      setTimeout(() => setRunState('idle'), 1200)
+    }, 2000)
+  }
+
+  // Icone Run (triangulo play)
+  const IconRun = () => (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+      <path d="M4 2.5v11l9-5.5L4 2.5z" />
+    </svg>
+  )
 
   return (
     <div style={{
@@ -30,140 +148,244 @@ function App() {
       fontFamily: 'Inter, system-ui, sans-serif',
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '2rem',
-      position: 'relative',
       overflow: 'hidden',
     }}>
-      {/* Decorative background glows */}
-      <div style={{
-        position: 'absolute',
-        width: '300px',
-        height: '300px',
-        background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(0,0,0,0) 70%)',
-        top: '10%',
-        left: '20%',
-        zIndex: 0,
-        pointerEvents: 'none',
-      }} />
-      <div style={{
-        position: 'absolute',
-        width: '350px',
-        height: '350px',
-        background: 'radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, rgba(0,0,0,0) 70%)',
-        bottom: '15%',
-        right: '15%',
-        zIndex: 0,
-        pointerEvents: 'none',
-      }} />
-
-      <main style={{
-        position: 'relative',
-        zIndex: 1,
-        maxWidth: '600px',
-        width: '100%',
-        background: 'rgba(17, 24, 39, 0.7)',
-        backdropFilter: 'blur(12px)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        borderRadius: '16px',
-        padding: '2.5rem',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4)',
-        textAlign: 'center',
+      {/* Header */}
+      <header style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0.5rem 1rem',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+        backgroundColor: 'rgba(17, 24, 39, 0.8)',
+        backdropFilter: 'blur(8px)',
+        flexShrink: 0,
       }}>
-        {/* Logo/Header */}
         <h1 style={{
-          fontSize: '2.5rem',
-          fontWeight: 800,
-          margin: '0 0 0.5rem 0',
+          fontSize: '1rem',
+          fontWeight: 700,
+          margin: 0,
           background: 'linear-gradient(135deg, #a5b4fc 0%, #6366f1 100%)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
-          letterSpacing: '-0.025em',
         }}>
-          SIMPLES
+          SIMPLES Editor
         </h1>
-        <p style={{
-          color: '#9ca3af',
-          fontSize: '1rem',
-          marginBottom: '2rem',
-          fontWeight: 400,
-        }}>
-          Editor de código e pipeline de execução interativa
-        </p>
-
-        {/* Sprint Status Panel */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.03)',
-          border: '1px solid rgba(255, 255, 255, 0.05)',
-          borderRadius: '12px',
-          padding: '1.5rem',
-          marginBottom: '2rem',
-          textAlign: 'left',
-        }}>
-          <h3 style={{
-            margin: '0 0 1rem 0',
-            fontSize: '1.1rem',
-            color: '#e5e7eb',
-            fontWeight: 600,
-          }}>
-            Sprint 1: Foundation & DevOps
-          </h3>
-          <ul style={{
-            margin: 0,
-            paddingLeft: '1.25rem',
-            color: '#9ca3af',
-            lineHeight: 1.6,
-          }}>
-            <li>docker-compose local stack validado</li>
-            <li>Nginx reverse proxy funcionando</li>
-            <li>Skeleton React + Flask integrado</li>
-          </ul>
-        </div>
-
-        {/* Backend Connectivity Status */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          background: 'rgba(255, 255, 255, 0.02)',
-          padding: '1rem 1.5rem',
-          borderRadius: '12px',
-          border: '1px solid rgba(255, 255, 255, 0.03)',
-        }}>
-          <span style={{ fontSize: '0.95rem', color: '#9ca3af', fontWeight: 500 }}>
-            Status da API do Backend:
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {(state === 'idle' || state === 'finished') && (
+            <button
+              onClick={() => sendRun(code)}
+              style={{
+                padding: '4px 12px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                borderRadius: '4px',
+                border: 'none',
+                cursor: 'pointer',
+                backgroundColor: state === 'finished' ? '#059669' : '#6366f1',
+                color: '#fff',
+              }}
+            >
+              {state === 'finished' ? 'EXECUTAR NOVAMENTE' : 'EXECUTAR'}
+            </button>
+          )}
+          {state === 'compiling' && (
+            <span style={{ fontSize: '0.75rem', color: '#f59e0b' }}>Compilando...</span>
+          )}
+          {state === 'executing' && (
+            <button
+              onClick={sendStop}
+              style={{
+                padding: '4px 12px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                borderRadius: '4px',
+                border: 'none',
+                cursor: 'pointer',
+                backgroundColor: '#ef4444',
+                color: '#fff',
+              }}
+            >
+              PARAR
+            </button>
+          )}
+          <span style={{
+            display: 'inline-block',
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            backgroundColor: healthColor,
+            boxShadow: `0 0 6px ${healthColor}`,
+          }} />
+          <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 500 }}>
+            API: {healthStatus}
           </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{
-              display: 'inline-block',
-              width: '10px',
-              height: '10px',
-              borderRadius: '50%',
-              backgroundColor: healthColor,
-              boxShadow: `0 0 8px ${healthColor}`,
-              transition: 'all 0.3s ease',
-            }} />
-            <span style={{
-              fontSize: '0.95rem',
-              fontWeight: 700,
-              color: healthColor,
-              letterSpacing: '0.05em',
-            }}>
-              {healthStatus}
-            </span>
-          </div>
         </div>
+      </header>
+
+      {/* Main layout */}
+      <main style={{
+        flex: 1,
+        display: 'flex',
+        overflow: 'hidden',
+      }}>
+        {/* Code Editor */}
+        <section style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          borderRight: '1px solid rgba(255, 255, 255, 0.06)',
+        }}>
+          <div style={{
+            padding: '0.35rem 1rem',
+            fontSize: '0.7rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            color: '#6b7280',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+            backgroundColor: 'rgba(17, 24, 39, 0.6)',
+          }}>
+            Editor (SIMPLES)
+          </div>
+          <div style={{ flex: 1 }}>
+            <Editor
+              height="100%"
+              language={SIMPLES_LANGUAGE_ID}
+              value={code}
+              onChange={value => setCode(value ?? '')}
+              theme="simples-dark"
+              beforeMount={handleBeforeMount}
+              options={{
+                fontSize: 14,
+                fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
+                minimap: { enabled: false },
+                lineNumbers: 'on',
+                renderWhitespace: 'selection',
+                tabSize: 4,
+                wordWrap: 'off',
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+              }}
+            />
+          </div>
+        </section>
+
+        {/* NASM Output panel */}
+        <aside style={{
+          width: '40%',
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: 'rgba(17, 24, 39, 0.4)',
+        }}>
+          <div style={{
+            padding: '0.35rem 1rem',
+            fontSize: '0.7rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            color: '#6b7280',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+            backgroundColor: 'rgba(17, 24, 39, 0.6)',
+          }}>
+            NASM Output (read-only)
+          </div>
+          <div style={{
+            flex: 1,
+            padding: '1rem',
+            color: nasmOutput ? '#e2e8f0' : '#4b5563',
+            fontSize: '0.85rem',
+            fontFamily: "'JetBrains Mono', monospace",
+            overflow: 'auto',
+            whiteSpace: 'pre-wrap',
+          }}>
+            {nasmOutput || (
+              <p style={{ textAlign: 'center', lineHeight: 1.6 }}>
+                O codigo assembly gerado aparecera aqui<br />
+                <span style={{ fontSize: '0.75rem' }}>(Clique em EXECUTAR para compilar)</span>
+              </p>
+            )}
+          </div>
+        </aside>
       </main>
 
+      {/* Footer with Run button */}
       <footer style={{
-        marginTop: '2rem',
-        fontSize: '0.85rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0.4rem 1rem',
+        borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+        backgroundColor: 'rgba(17, 24, 39, 0.8)',
+        fontSize: '0.7rem',
         color: '#4b5563',
-        zIndex: 1,
+        flexShrink: 0,
       }}>
-        SimplesEditor &copy; 2026
+        <span>SIMPLES Editor v0.2.0 — Sprint 2</span>
+
+        {/* Botao Run mockado (Sprint 2) */}
+        <button
+          onClick={handleRun}
+          disabled={runState !== 'idle'}
+          aria-label={runState === 'compiling' ? 'Compilando...' : runState === 'done' ? 'Concluido!' : 'Executar codigo'}
+          title={runState === 'compiling' ? 'Compilando...' : runState === 'done' ? 'Compilacao concluida!' : 'Executar (mock)'}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '6px 18px',
+            border: 'none',
+            borderRadius: '6px',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            cursor: runState === 'idle' ? 'pointer' : 'default',
+            transition: 'all 0.2s ease',
+            ...(runState === 'idle'
+              ? {
+                  backgroundColor: '#10b981',
+                  color: '#ffffff',
+                  boxShadow: '0 0 10px rgba(16, 185, 129, 0.25)',
+                }
+              : runState === 'compiling'
+              ? {
+                  backgroundColor: '#6366f1',
+                  color: '#c7d2fe',
+                  opacity: 0.85,
+                }
+              : {
+                  backgroundColor: '#10b981',
+                  color: '#ffffff',
+                  boxShadow: '0 0 10px rgba(16, 185, 129, 0.35)',
+                }),
+          }}
+        >
+          {runState === 'compiling' ? (
+            <>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
+                style={{ animation: 'spin 1s linear infinite' }}>
+                <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2"
+                  strokeDasharray="28" strokeDashoffset="8" />
+              </svg>
+              Compilando...
+            </>
+          ) : runState === 'done' ? (
+            <>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z" />
+              </svg>
+              Concluido!
+            </>
+          ) : (
+            <>
+              <IconRun />
+              Run
+            </>
+          )}
+        </button>
+
+        <span>{code.split('\n').length} linhas</span>
       </footer>
+
+      {/* Keyframes para animacao do spinner */}
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   )
 }

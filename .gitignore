@@ -34,3 +34,10 @@ Thumbs.db
 
 # ===== Logs =====
 *.log
+
+# ===== Playwright =====
+test-results/
+playwright-report/
+
+# ===== Agent =====
+.agent/

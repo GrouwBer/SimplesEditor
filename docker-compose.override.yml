@@ -1,0 +1,51 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: builder
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:5173',r=>{process.exit(r.statusCode===200?0:1)})\" || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: flask run --host=0.0.0.0 --reload
+    volumes:
+      - ./backend:/app
+      - ./simples-compiler:/opt/simples-compiler
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=development
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    volumes:
+      - ./nginx/default.dev.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8080:80"
+
+  runner_image_build:
+    command: ["echo", "skipped in dev"]
+
+volumes:
+  frontend_node_modules:
