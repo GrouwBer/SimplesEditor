@@ -10,6 +10,10 @@ logger = get_logger(__name__)
 
 app = Flask(__name__)
 
+# Registrar blueprint de autenticacao
+from auth import auth_bp
+app.register_blueprint(auth_bp)
+
 # Registrar endpoint WebSocket /ws/run
 from ws_handler import register_websocket
 register_websocket(app)
