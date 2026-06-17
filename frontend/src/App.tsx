@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Editor from '@monaco-editor/react'
 import type { Monaco } from '@monaco-editor/react'
 import { SIMPLES_LANGUAGE_ID, simplesMonarchTokens } from './simplesLang'
+import { useExecution } from './hooks/useExecution'
 
 const DEFAULT_CODE = [
   'programa exemplo_soma',
@@ -51,6 +52,53 @@ function App() {
   const [code, setCode] = useState<string>(DEFAULT_CODE)
   const [healthStatus, setHealthStatus] = useState<string>('checking...')
   const [healthColor, setHealthColor] = useState<string>('#e2e8f0')
+  const [nasmOutput, setNasmOutput] = useState<string | null>(null)
+
+  // WebSocket connection
+  const wsRef = useRef<WebSocket | null>(null)
+  const { state, sendRun, sendStop, handleMessage } = useExecution(wsRef)
+
+  // Sprint 2 — botao Run mockado (fallback)
+  const [runState, setRunState] = useState<'idle' | 'compiling' | 'done'>('idle')
+
+  useEffect(() => {
+    // Conecta WebSocket
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const wsUrl = `${protocol}//${window.location.host}/ws/run`
+    const ws = new WebSocket(wsUrl)
+
+    ws.onopen = () => {
+      console.log('[App] WebSocket conectado')
+    }
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data)
+        handleMessage(msg)
+        // Atualiza NASM output quando disponivel
+        if (msg.asm) {
+          setNasmOutput(msg.asm)
+        }
+      } catch (e) {
+        console.error('[App] Erro ao processar mensagem WS:', e)
+      }
+    }
+
+    ws.onclose = () => {
+      console.log('[App] WebSocket desconectado')
+    }
+
+    wsRef.current = ws
+
+    return () => {
+      try {
+        ws.close()
+      } catch (e) {
+        console.error('[App] Erro ao fechar WebSocket:', e)
+      }
+      wsRef.current = null
+    }
+  }, [handleMessage])
 
   useEffect(() => {
     fetch('/api/health')
@@ -74,6 +122,23 @@ function App() {
   const handleBeforeMount = (monaco: Monaco) => {
     registerSimplesLanguage(monaco)
   }
+
+  // Sprint 2 — Run mockado: simula compilacao sem backend real
+  const handleRun = () => {
+    if (runState !== 'idle') return
+    setRunState('compiling')
+    setTimeout(() => {
+      setRunState('done')
+      setTimeout(() => setRunState('idle'), 1200)
+    }, 2000)
+  }
+
+  // Icone Run (triangulo play)
+  const IconRun = () => (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+      <path d="M4 2.5v11l9-5.5L4 2.5z" />
+    </svg>
+  )
 
   return (
     <div style={{
@@ -107,6 +172,43 @@ function App() {
           SIMPLES Editor
         </h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {(state === 'idle' || state === 'finished') && (
+            <button
+              onClick={() => sendRun(code)}
+              style={{
+                padding: '4px 12px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                borderRadius: '4px',
+                border: 'none',
+                cursor: 'pointer',
+                backgroundColor: state === 'finished' ? '#059669' : '#6366f1',
+                color: '#fff',
+              }}
+            >
+              {state === 'finished' ? 'EXECUTAR NOVAMENTE' : 'EXECUTAR'}
+            </button>
+          )}
+          {state === 'compiling' && (
+            <span style={{ fontSize: '0.75rem', color: '#f59e0b' }}>Compilando...</span>
+          )}
+          {state === 'executing' && (
+            <button
+              onClick={sendStop}
+              style={{
+                padding: '4px 12px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                borderRadius: '4px',
+                border: 'none',
+                cursor: 'pointer',
+                backgroundColor: '#ef4444',
+                color: '#fff',
+              }}
+            >
+              PARAR
+            </button>
+          )}
           <span style={{
             display: 'inline-block',
             width: '8px',
@@ -189,22 +291,23 @@ function App() {
           <div style={{
             flex: 1,
             padding: '1rem',
-            color: '#4b5563',
+            color: nasmOutput ? '#e2e8f0' : '#4b5563',
             fontSize: '0.85rem',
             fontFamily: "'JetBrains Mono', monospace",
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            overflow: 'auto',
+            whiteSpace: 'pre-wrap',
           }}>
-            <p style={{ textAlign: 'center', lineHeight: 1.6 }}>
-              O codigo assembly gerado aparecera aqui<br />
-              <span style={{ fontSize: '0.75rem' }}>(Sprint 3 — Compilation Pipeline)</span>
-            </p>
+            {nasmOutput || (
+              <p style={{ textAlign: 'center', lineHeight: 1.6 }}>
+                O codigo assembly gerado aparecera aqui<br />
+                <span style={{ fontSize: '0.75rem' }}>(Clique em EXECUTAR para compilar)</span>
+              </p>
+            )}
           </div>
         </aside>
       </main>
 
-      {/* Footer */}
+      {/* Footer with Run button */}
       <footer style={{
         display: 'flex',
         alignItems: 'center',
@@ -217,8 +320,72 @@ function App() {
         flexShrink: 0,
       }}>
         <span>SIMPLES Editor v0.2.0 — Sprint 2</span>
+
+        {/* Botao Run mockado (Sprint 2) */}
+        <button
+          onClick={handleRun}
+          disabled={runState !== 'idle'}
+          aria-label={runState === 'compiling' ? 'Compilando...' : runState === 'done' ? 'Concluido!' : 'Executar codigo'}
+          title={runState === 'compiling' ? 'Compilando...' : runState === 'done' ? 'Compilacao concluida!' : 'Executar (mock)'}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '6px 18px',
+            border: 'none',
+            borderRadius: '6px',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            cursor: runState === 'idle' ? 'pointer' : 'default',
+            transition: 'all 0.2s ease',
+            ...(runState === 'idle'
+              ? {
+                  backgroundColor: '#10b981',
+                  color: '#ffffff',
+                  boxShadow: '0 0 10px rgba(16, 185, 129, 0.25)',
+                }
+              : runState === 'compiling'
+              ? {
+                  backgroundColor: '#6366f1',
+                  color: '#c7d2fe',
+                  opacity: 0.85,
+                }
+              : {
+                  backgroundColor: '#10b981',
+                  color: '#ffffff',
+                  boxShadow: '0 0 10px rgba(16, 185, 129, 0.35)',
+                }),
+          }}
+        >
+          {runState === 'compiling' ? (
+            <>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"
+                style={{ animation: 'spin 1s linear infinite' }}>
+                <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2"
+                  strokeDasharray="28" strokeDashoffset="8" />
+              </svg>
+              Compilando...
+            </>
+          ) : runState === 'done' ? (
+            <>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z" />
+              </svg>
+              Concluido!
+            </>
+          ) : (
+            <>
+              <IconRun />
+              Run
+            </>
+          )}
+        </button>
+
         <span>{code.split('\n').length} linhas</span>
       </footer>
+
+      {/* Keyframes para animacao do spinner */}
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   )
 }
