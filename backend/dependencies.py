@@ -6,7 +6,6 @@ O JWT e extraido do header Authorization: Bearer <token>
 e validado contra o JWT secret do Supabase.
 """
 
-import os
 from functools import wraps
 from typing import Any, Callable
 
@@ -42,7 +41,9 @@ def verify_jwt(f: Callable) -> Callable:
         if not auth_header.startswith("Bearer "):
             return jsonify({"error": "token_ausente"}), 401
 
-        token = auth_header[7:]  # Remove "Bearer "
+        token = auth_header[7:].strip()  # Remove "Bearer "
+        if not token:
+            return jsonify({"error": "token_ausente"}), 401
 
         try:
             payload = _validate_token(token)
