@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import Editor from '@monaco-editor/react'
 import type { Monaco } from '@monaco-editor/react'
 import { SIMPLES_LANGUAGE_ID, simplesMonarchTokens } from './simplesLang'
+import { AuthProvider, useAuth } from './AuthContext'
+import LoginPage from './pages/LoginPage'
 import { useExecution } from './hooks/useExecution'
 
 const DEFAULT_CODE = [
@@ -48,7 +50,8 @@ function registerSimplesLanguage(monaco: Monaco) {
   })
 }
 
-function App() {
+function AppContent() {
+  const { user, loading, signOut } = useAuth()
   const [code, setCode] = useState<string>(DEFAULT_CODE)
   const [healthStatus, setHealthStatus] = useState<string>('checking...')
   const [healthColor, setHealthColor] = useState<string>('#e2e8f0')
@@ -118,6 +121,28 @@ function App() {
       })
   }, [])
 
+  // Se estiver carregando a sessao, mostra tela de loading
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#0b0f19',
+        color: '#6b7280',
+        fontFamily: 'Inter, system-ui, sans-serif',
+      }}>
+        Carregando...
+      </div>
+    )
+  }
+
+  // Se nao estiver autenticado, mostra tela de login
+  if (!user) {
+    return <LoginPage />
+  }
+
   // Callback executado antes do Monaco montar
   const handleBeforeMount = (monaco: Monaco) => {
     registerSimplesLanguage(monaco)
@@ -172,6 +197,28 @@ function App() {
           SIMPLES Editor
         </h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+<<<<<<< HEAD
+          {user && (
+            <>
+              <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                {user.email}
+              </span>
+              <button
+                onClick={signOut}
+                style={{
+                  padding: '2px 8px',
+                  fontSize: '0.7rem',
+                  borderRadius: '4px',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  cursor: 'pointer',
+                  backgroundColor: 'transparent',
+                  color: '#9ca3af',
+                }}
+              >
+                Sair
+              </button>
+            </>
+=======
           {(state === 'idle' || state === 'finished') && (
             <button
               onClick={() => sendRun(code)}
@@ -208,6 +255,7 @@ function App() {
             >
               PARAR
             </button>
+>>>>>>> origin/dev
           )}
           <span style={{
             display: 'inline-block',
@@ -390,4 +438,10 @@ function App() {
   )
 }
 
-export default App
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  )
+}
