@@ -21,16 +21,22 @@ logger = get_logger(__name__)
 auth_bp = Blueprint("auth", __name__)
 
 
+_supabase_client = None
+
+
 def _get_supabase_client():
-    """Retorna cliente Supabase ou None se nao configurado."""
+    """Retorna cliente Supabase ou None se nao configurado (lazy-init)."""
+    global _supabase_client
     if not is_supabase_configured():
         return None
-    try:
-        from supabase import create_client
-        return create_client(get_supabase_url(), get_supabase_anon_key())
-    except Exception as e:
-        logger.error("supabase_client_error", error=str(e))
-        return None
+    if _supabase_client is None:
+        try:
+            from supabase import create_client
+            _supabase_client = create_client(get_supabase_url(), get_supabase_anon_key())
+        except Exception as e:
+            logger.error("supabase_client_error", error=str(e))
+            return None
+    return _supabase_client
 
 
 @auth_bp.route("/api/auth/signup", methods=["POST"])
@@ -76,9 +82,8 @@ def signup():
             } if result.session else None,
         }), 201
     except Exception as e:
-        error_msg = str(e)
-        logger.error("signup_error", error=error_msg)
-        return jsonify({"error": error_msg}), 400
+        logger.error("signup_error", error=str(e))
+        return jsonify({"error": "erro_ao_criar_usuario"}), 400
 
 
 @auth_bp.route("/api/auth/signin", methods=["POST"])
