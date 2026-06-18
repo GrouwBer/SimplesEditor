@@ -199,19 +199,27 @@ function AppContent() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {(state === 'idle' || state === 'finished') && (
             <button
-              onClick={() => sendRun(code)}
+              onClick={() => wsStatus === 'conectado' && sendRun(code)}
+              disabled={wsStatus !== 'conectado'}
+              title={wsStatus !== 'conectado' ? `WebSocket ${wsStatus} — aguarde conectar` : 'Executar codigo'}
               style={{
                 padding: '4px 12px',
                 fontSize: '0.75rem',
                 fontWeight: 600,
                 borderRadius: '4px',
                 border: 'none',
-                cursor: 'pointer',
-                backgroundColor: state === 'finished' ? '#059669' : '#6366f1',
-                color: '#fff',
+                cursor: wsStatus === 'conectado' ? 'pointer' : 'not-allowed',
+                backgroundColor: state === 'finished' ? '#059669'
+                  : wsStatus === 'conectado' ? '#6366f1'
+                  : '#374151',
+                color: wsStatus === 'conectado' ? '#fff' : '#6b7280',
+                opacity: wsStatus === 'conectado' ? 1 : 0.6,
               }}
             >
-              {state === 'finished' ? 'EXECUTAR NOVAMENTE' : 'EXECUTAR'}
+              {wsStatus === 'conectado'
+                ? (state === 'finished' ? 'EXECUTAR NOVAMENTE' : 'EXECUTAR')
+                : `WS: ${wsStatus}...`
+              }
             </button>
           )}
           {state === 'compiling' && (
@@ -388,12 +396,22 @@ function AppContent() {
             document.body.style.cursor = 'row-resize'
           }}
           style={{
-            height: '5px',
+            height: '8px',
             cursor: 'row-resize',
-            backgroundColor: 'rgba(255, 255, 255, 0.06)',
+            backgroundColor: 'rgba(255, 255, 255, 0.04)',
             flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
-        />
+        >
+          <div style={{
+            width: '40px',
+            height: '4px',
+            borderRadius: '2px',
+            backgroundColor: 'rgba(255, 255, 255, 0.12)',
+          }} />
+        </div>
 
         {/* Terminal resizable */}
         <div style={{
