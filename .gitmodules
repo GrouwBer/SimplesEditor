@@ -1,0 +1,3 @@
+[submodule "simples-compiler"]
+	path = simples-compiler
+	url = https://github.com/pm-avila/simples-compiler.git

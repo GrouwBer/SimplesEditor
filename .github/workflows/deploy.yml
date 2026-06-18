@@ -20,6 +20,8 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -36,6 +38,7 @@ jobs:
           script: |
             cd ${{ secrets.ORACLE_REPO_PATH || '/home/ubuntu/SimplesEditor' }}
             git pull origin main
+            git submodule update --init --recursive
             # Usar heredoc evita secrets no .bash_history
             cat > .env << 'ENVEOF'
             SUPABASE_URL=${{ secrets.SUPABASE_URL }}

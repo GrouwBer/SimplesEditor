@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY ./simples-compiler /opt/simples-compiler
-RUN cd /opt/simples-compiler && make && cp simplesc /usr/local/bin/simplesc
+RUN cd /opt/simples-compiler && make && cp build/simplesc /usr/local/bin/simplesc
 
 WORKDIR /app
 COPY backend/requirements.txt .

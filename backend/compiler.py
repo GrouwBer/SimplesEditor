@@ -137,18 +137,23 @@ def _parse_simplesc_errors(stderr: str) -> list[dict]:
     """
     Extrai erros com linha/coluna da saida do simplesc.
 
-    Formato esperado: "erro na linha L, coluna C: mensagem"
-    ou padrao similar.
+    Formato do professor: lexer:5:12: mensagem
+    Tambem suporta formatos antigos.
 
     Returns:
         Lista de dicts com keys: line, column, message.
     """
 
     errors = []
-    # Tenta corresponder padroes como "linha 5" ou "line 5"
+    # Padroes do mais especifico para o mais generico
     patterns = [
+        # Formato do professor: phase:line:col: message
+        r"^(?:lexer|parser|semantic|codegen|compiler):(\d+):(\d+):\s*(.+)",
+        # Formato GCC-like generico: :line:col: message
+        r":(\d+):(\d+):\s*(.+)",
+        # Formato antigo: "erro na linha L, coluna C: mensagem"
         r"(?:linha|line)\s*(\d+)(?:,\s*(?:coluna|column|col)\s*(\d+))?\s*:\s*(.+)",
-        r":(\d+):(\d+):\s*(.+)",  # formato GCC-like
+        # Formato com colchetes: [linha 5, coluna 10] mensagem
         r"\[linha\s*(\d+)(?:,\s*coluna\s*(\d+))?\]\s*(.+)",
     ]
 
@@ -220,7 +225,7 @@ def compile_source(source_code: str) -> CompileResult:
 
         # --- Fase 1: SIMPLES → NASM (simplesc) ---
         phase1 = _run_command(
-            [SIMPLESC_PATH, str(source_path)],
+            [SIMPLESC_PATH, str(source_path), "-o", str(asm_path)],
             timeout=APP_CONFIG["compile_timeout"],
             cwd=str(work_dir),
         )
@@ -228,23 +233,23 @@ def compile_source(source_code: str) -> CompileResult:
 
         if not phase1.success:
             errors = _parse_simplesc_errors(phase1.error)
-            # Pega output NASM mesmo com erros parciais
-            nasm_output = phase1.output
+            # Tenta ler NASM parcial do arquivo mesmo com erros
+            nasm_output = None
+            if asm_path.exists():
+                nasm_output = asm_path.read_text(encoding="utf-8")
             COMPILATIONS_TOTAL.labels(status="error").inc()
             duration = time.monotonic() - start
             return CompileResult(
                 success=False,
-                nasm_output=nasm_output or None,
+                nasm_output=nasm_output,
                 binary_path=None,
                 errors=errors,
                 duration_s=duration,
                 phases=phases,
             )
 
-        nasm_output = phase1.output
-
-        # Salva output NASM em arquivo
-        asm_path.write_text(phase1.output, encoding="utf-8")
+        # Le NASM do arquivo gerado pelo compilador
+        nasm_output = asm_path.read_text(encoding="utf-8")
 
         # --- Fase 2: NASM → .o (nasm) ---
         phase2 = _run_command(

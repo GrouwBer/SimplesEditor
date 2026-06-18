@@ -190,7 +190,7 @@ class WsRunHandler:
 
             # --- Fase 1: SIMPLES → NASM ---
             phase1 = self._run_cmd(
-                [SIMPLESC_PATH, str(source_path)],
+                [SIMPLESC_PATH, str(source_path), "-o", str(asm_path)],
                 timeout=APP_CONFIG["compile_timeout"],
             )
             if phase1 is None or phase1["returncode"] != 0:
@@ -205,8 +205,8 @@ class WsRunHandler:
                 COMPILATIONS_TOTAL.labels(status="error").inc()
                 return None
 
-            nasm_code = phase1["stdout"]
-            asm_path.write_text(nasm_code, encoding="utf-8")
+            # Le NASM do arquivo gerado pelo compilador
+            nasm_code = asm_path.read_text(encoding="utf-8")
 
             # --- Fase 2: NASM → .o ---
             phase2 = self._run_cmd(
@@ -366,15 +366,20 @@ class WsRunHandler:
 
     @staticmethod
     def _extract_line(stderr: str, default: int = 0) -> int:
-        """Extrai numero da linha de mensagem de erro."""
-        
+        """Extrai numero da linha de mensagem de erro (formato phase:line:col: msg)."""
+        # Formato do professor: lexer:5:12: mensagem
+        m = re.search(r":(\d+):", stderr)
+        if m:
+            return int(m.group(1))
         m = re.search(r"(?:linha|line)\s*(\d+)", stderr, re.IGNORECASE)
         return int(m.group(1)) if m else default
 
     @staticmethod
     def _extract_column(stderr: str, default: int = 0) -> int:
-        """Extrai numero da coluna de mensagem de erro."""
-        
+        """Extrai numero da coluna de mensagem de erro (formato phase:line:col: msg)."""
+        m = re.search(r":\d+:(\d+):", stderr)
+        if m:
+            return int(m.group(1))
         m = re.search(r"(?:coluna|column|col)\s*(\d+)", stderr, re.IGNORECASE)
         return int(m.group(1)) if m else default
 
