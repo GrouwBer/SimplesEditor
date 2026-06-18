@@ -11,12 +11,12 @@ import { SplitPane } from './components/SplitPane'
 
 const DEFAULT_CODE = [
   'programa exemplo_soma',
-  '  inteiro a, b, resultado',
+  '  inteiro a, b, resultado;',
   'inicio',
-  '  leia a',
-  '  leia b',
-  '  resultado <- a + b',
-  '  escreval resultado',
+  '  leia a;',
+  '  leia b;',
+  '  resultado <- a + b;',
+  '  escreval resultado;',
   'fim',
 ].join('\n')
 
