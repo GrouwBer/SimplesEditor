@@ -36,6 +36,8 @@ services:
     expose:
       - "5000"
     environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
       - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
       - EXEC_TIMEOUT_S=10
       - COMPILE_TIMEOUT_S=15
