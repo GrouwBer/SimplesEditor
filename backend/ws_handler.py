@@ -34,7 +34,7 @@ logger = get_logger(__name__)
 _CONTAINER_WAIT_GRACE_S = 5
 
 # Diretorio temporario para artefatos
-COMPILE_TMP = os.environ.get("COMPILE_TMP", "/tmp/simples-compile")
+COMPILE_TMP = os.environ.get("COMPILE_TMP", "/tmp/simples")
 SIMPLESC_PATH = os.environ.get("SIMPLESC_PATH", "/usr/local/bin/simplesc")
 NASM_PATH = os.environ.get("NASM_PATH", "nasm")
 LD_PATH = os.environ.get("LD_PATH", "i686-linux-gnu-ld")

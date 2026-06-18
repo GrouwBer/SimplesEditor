@@ -57,7 +57,7 @@ LD_PATH = os.environ.get(
 )
 
 # Diretorio temporario para artefatos de compilacao
-COMPILE_TMP = os.environ.get("COMPILE_TMP", "/tmp/simples-compile")
+COMPILE_TMP = os.environ.get("COMPILE_TMP", "/tmp/simples")
 
 
 def _ensure_tmp_dir():
