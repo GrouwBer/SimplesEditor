@@ -43,12 +43,19 @@ jobs:
             SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
             SUPABASE_JWT_SECRET=${{ secrets.SUPABASE_JWT_SECRET }}
             ENVEOF
-            docker compose -f docker-compose.yml down --remove-orphans || true
-            docker compose -f docker-compose.yml up -d --build
+            # Usa compose HTTP-only se nao houver dominio TLS configurado
+            COMPOSE_FILES="-f docker-compose.yml"
+            if [ -n "${{ secrets.ORACLE_DOMAIN }}" ]; then
+              COMPOSE_FILES="$COMPOSE_FILES"
+            else
+              COMPOSE_FILES="$COMPOSE_FILES -f docker-compose.http.yml"
+            fi
+            docker compose $COMPOSE_FILES down --remove-orphans || true
+            docker compose $COMPOSE_FILES up -d --build
             # Aguardar health
             HEALTHY=0
             for i in $(seq 1 30); do
-              if curl -sk https://localhost/api/health | grep -q '"status": "ok"'; then
+              if curl -s http://localhost/api/health | grep -q '"status": "ok"'; then
                 echo "Deploy OK"
                 HEALTHY=1
                 break
@@ -57,6 +64,6 @@ jobs:
             done
             if [ "$HEALTHY" -eq 0 ]; then
               echo "::error::Health check failed after 60s"
-              docker compose -f docker-compose.yml logs backend
+              docker compose $COMPOSE_FILES logs backend
               exit 1
             fi
