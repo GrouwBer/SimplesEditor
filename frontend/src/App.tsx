@@ -7,6 +7,7 @@ import LoginPage from './pages/LoginPage'
 import { useExecution } from './hooks/useExecution'
 import { useTerminal } from './hooks/useTerminal'
 import Terminal from './components/Terminal'
+import { SplitPane } from './components/SplitPane'
 
 const DEFAULT_CODE = [
   'programa exemplo_soma',
@@ -58,6 +59,9 @@ function AppContent() {
   const [healthStatus, setHealthStatus] = useState<string>('checking...')
   const [healthColor, setHealthColor] = useState<string>('#e2e8f0')
   const [nasmOutput, setNasmOutput] = useState<string | null>(null)
+  const [wsStatus, setWsStatus] = useState<string>('conectando...')
+  const [wsColor, setWsColor] = useState<string>('#f59e0b')
+  const [terminalHeight, setTerminalHeight] = useState(200)
 
   // WebSocket connection
   const wsRef = useRef<WebSocket | null>(null)
@@ -72,6 +76,8 @@ function AppContent() {
 
     ws.onopen = () => {
       console.log('[App] WebSocket conectado')
+      setWsStatus('conectado')
+      setWsColor('#10b981')
     }
 
     ws.onmessage = (event) => {
@@ -93,6 +99,13 @@ function AppContent() {
 
     ws.onclose = () => {
       console.log('[App] WebSocket desconectado')
+      setWsStatus('desconectado')
+      setWsColor('#ef4444')
+    }
+
+    ws.onerror = () => {
+      setWsStatus('erro')
+      setWsColor('#ef4444')
     }
 
     wsRef.current = ws
@@ -253,106 +266,149 @@ function AppContent() {
           <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 500 }}>
             API: {healthStatus}
           </span>
+          <span style={{
+            display: 'inline-block',
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            backgroundColor: wsColor,
+            boxShadow: `0 0 6px ${wsColor}`,
+            marginLeft: '4px',
+          }} />
+          <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 500 }}>
+            WS: {wsStatus}
+          </span>
         </div>
       </header>
 
-      {/* Main layout */}
-      <main style={{
-        flex: 1,
-        display: 'flex',
-        overflow: 'hidden',
-      }}>
-        {/* Code Editor */}
-        <section style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          borderRight: '1px solid rgba(255, 255, 255, 0.06)',
-        }}>
-          <div style={{
-            padding: '0.35rem 1rem',
-            fontSize: '0.7rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            color: '#6b7280',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-            backgroundColor: 'rgba(17, 24, 39, 0.6)',
-          }}>
-            Editor (SIMPLES)
-          </div>
-          <div style={{ flex: 1 }}>
-            <Editor
-              height="100%"
-              language={SIMPLES_LANGUAGE_ID}
-              value={code}
-              onChange={value => setCode(value ?? '')}
-              theme="simples-dark"
-              beforeMount={handleBeforeMount}
-              options={{
-                fontSize: 14,
-                fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
-                minimap: { enabled: false },
-                lineNumbers: 'on',
-                renderWhitespace: 'selection',
-                tabSize: 4,
-                wordWrap: 'off',
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-              }}
-            />
-          </div>
-        </section>
+      {/* Main + Terminal: Split vertical */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Editor + NASM: SplitPane horizontal */}
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          <SplitPane defaultLeftWidth={60} minLeftWidth={30} minRightWidth={20}>
+            {/* Code Editor */}
+            <section style={{
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+            }}>
+              <div style={{
+                padding: '0.35rem 1rem',
+                fontSize: '0.7rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                color: '#6b7280',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+                backgroundColor: 'rgba(17, 24, 39, 0.6)',
+                flexShrink: 0,
+              }}>
+                Editor (SIMPLES)
+              </div>
+              <div style={{ flex: 1 }}>
+                <Editor
+                  height="100%"
+                  language={SIMPLES_LANGUAGE_ID}
+                  value={code}
+                  onChange={value => setCode(value ?? '')}
+                  theme="simples-dark"
+                  beforeMount={handleBeforeMount}
+                  options={{
+                    fontSize: 14,
+                    fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
+                    minimap: { enabled: false },
+                    lineNumbers: 'on',
+                    renderWhitespace: 'selection',
+                    tabSize: 4,
+                    wordWrap: 'off',
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                  }}
+                />
+              </div>
+            </section>
 
-        {/* NASM Output panel */}
-        <aside style={{
-          width: '40%',
-          display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: 'rgba(17, 24, 39, 0.4)',
-        }}>
-          <div style={{
-            padding: '0.35rem 1rem',
-            fontSize: '0.7rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            color: '#6b7280',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-            backgroundColor: 'rgba(17, 24, 39, 0.6)',
-          }}>
-            NASM Output (read-only)
-          </div>
-          <div style={{
-            flex: 1,
-            padding: '1rem',
-            color: nasmOutput ? '#e2e8f0' : '#4b5563',
-            fontSize: '0.85rem',
-            fontFamily: "'JetBrains Mono', monospace",
-            overflow: 'auto',
-            whiteSpace: 'pre-wrap',
-          }}>
-            {nasmOutput || (
-              <p style={{ textAlign: 'center', lineHeight: 1.6 }}>
-                O codigo assembly gerado aparecera aqui<br />
-                <span style={{ fontSize: '0.75rem' }}>(Clique em EXECUTAR para compilar)</span>
-              </p>
-            )}
-          </div>
-        </aside>
-      </main>
+            {/* NASM Output panel */}
+            <aside style={{
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+              backgroundColor: 'rgba(17, 24, 39, 0.4)',
+            }}>
+              <div style={{
+                padding: '0.35rem 1rem',
+                fontSize: '0.7rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                color: '#6b7280',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+                backgroundColor: 'rgba(17, 24, 39, 0.6)',
+                flexShrink: 0,
+              }}>
+                NASM Output
+              </div>
+              <div style={{
+                flex: 1,
+                padding: '1rem',
+                color: nasmOutput ? '#e2e8f0' : '#4b5563',
+                fontSize: '0.85rem',
+                fontFamily: "'JetBrains Mono', monospace",
+                overflow: 'auto',
+                whiteSpace: 'pre-wrap',
+              }}>
+                {nasmOutput || (
+                  <p style={{ textAlign: 'center', lineHeight: 1.6 }}>
+                    O codigo assembly gerado aparecera aqui<br />
+                    <span style={{ fontSize: '0.75rem' }}>(Clique em EXECUTAR para compilar)</span>
+                  </p>
+                )}
+              </div>
+            </aside>
+          </SplitPane>
+        </div>
 
-      {/* Terminal */}
-      <div style={{
-        height: '200px',
-        flexShrink: 0,
-      }}>
-        <Terminal
-          lines={lines}
-          execState={state}
-          exitCode={exitCode}
-          durationMs={durationMs}
-          onSendStdin={sendStdin}
-          onClear={clearTerminal}
+        {/* Divisor vertical do terminal */}
+        <div
+          onMouseDown={(e) => {
+            e.preventDefault()
+            const startY = e.clientY
+            const startHeight = terminalHeight
+            const onMove = (ev: MouseEvent) => {
+              const delta = startY - ev.clientY
+              setTerminalHeight(Math.max(80, Math.min(500, startHeight + delta)))
+            }
+            const onUp = () => {
+              document.removeEventListener('mousemove', onMove)
+              document.removeEventListener('mouseup', onUp)
+              document.body.style.userSelect = ''
+              document.body.style.cursor = ''
+            }
+            document.addEventListener('mousemove', onMove)
+            document.addEventListener('mouseup', onUp)
+            document.body.style.userSelect = 'none'
+            document.body.style.cursor = 'row-resize'
+          }}
+          style={{
+            height: '5px',
+            cursor: 'row-resize',
+            backgroundColor: 'rgba(255, 255, 255, 0.06)',
+            flexShrink: 0,
+          }}
         />
+
+        {/* Terminal resizable */}
+        <div style={{
+          height: `${terminalHeight}px`,
+          flexShrink: 0,
+        }}>
+          <Terminal
+            lines={lines}
+            execState={state}
+            exitCode={exitCode}
+            durationMs={durationMs}
+            onSendStdin={sendStdin}
+            onClear={clearTerminal}
+          />
+        </div>
       </div>
 
       {/* Footer */}
