@@ -68,7 +68,6 @@ _DOCKER_KWARGS_KEYS = [
     "mem_limit",
     "cpu_quota",
     "cpu_period",
-    "stop_timeout",
     "pids_limit",
     "network_disabled",
     "read_only",
