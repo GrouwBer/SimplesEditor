@@ -119,6 +119,8 @@ EOF
 
 ## 6. Build e Deploy
 
+### Opcao A: Deploy manual
+
 ```bash
 # Build das imagens
 docker compose -f docker-compose.yml build
@@ -130,6 +132,15 @@ docker compose -f docker-compose.yml up -d
 docker compose ps
 docker compose logs backend | tail -20
 ```
+
+### Opcao B: Deploy automatizado (recomendado)
+
+```bash
+# O script deploy.sh automatiza todo o processo
+./scripts/deploy.sh simples.example.edu.br dev
+```
+
+O script `scripts/deploy.sh` executa: verificacao de pre-requisitos, certificados TLS, git pull, build, deploy, healthcheck e verificacao do frontend.
 
 ---
 
