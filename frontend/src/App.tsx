@@ -207,7 +207,7 @@ function AppContent() {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      height: '100vh',
       backgroundColor: '#0b0f19',
       color: '#f3f4f6',
       fontFamily: 'Inter, system-ui, sans-serif',
