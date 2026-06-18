@@ -50,6 +50,7 @@ class WsRunHandler:
         self.ws = ws
         self._process: subprocess.Popen | None = None
         self._container_id: str | None = None
+        self._stdin_socket = None  # socket do stdin do container Docker
         self._running = False
         self._timed_out = False
         self._exit_code: int | None = None
@@ -70,7 +71,16 @@ class WsRunHandler:
     def handle_stdin(self, data: str):
         """Envia dados para o stdin do processo em execucao."""
         with self._lock:
-            if self._process and self._process.stdin:
+            # Docker sandbox path (stdin via socket)
+            if self._stdin_socket:
+                try:
+                    import docker
+                    sock = self._stdin_socket
+                    sock.send(data.encode("utf-8"))
+                except Exception:
+                    pass
+            # Subprocess path (fallback)
+            elif self._process and self._process.stdin:
                 try:
                     self._process.stdin.write(data.encode("utf-8"))
                     self._process.stdin.flush()
@@ -287,11 +297,12 @@ class WsRunHandler:
 
     def _run_binary(self, binary_path: str):
         """
-        Executa o binario no sandbox Docker com streaming de I/O.
+        Executa o binario no sandbox Docker com streaming de I/O e stdin interativo.
         """
         self._running = True
         self._timed_out = False
         self._exit_code = None
+        self._stdin_socket = None
 
         try:
             import docker
@@ -314,6 +325,7 @@ class WsRunHandler:
             run_kwargs = get_sandbox_run_kwargs()
             run_kwargs["volumes"] = volumes
             run_kwargs["detach"] = True
+            run_kwargs["stdin_open"] = True  # Mantem stdin aberto para leia
 
             container = client.containers.run(
                 image=APP_CONFIG["sandbox_image"],
@@ -322,7 +334,14 @@ class WsRunHandler:
             )
             self._container_id = container.id
 
-            # Streaming de logs em tempo real
+            # Conecta socket de stdin para input interativo (leia)
+            try:
+                sock = container.attach_socket(params={'stdin': 1, 'stream': 1})
+                self._stdin_socket = sock
+            except Exception:
+                pass
+
+            # Streaming de logs em tempo real (stdout/stderr)
             try:
                 for line in container.logs(stdout=True, stderr=True, stream=True, follow=True):
                     if isinstance(line, bytes):
@@ -346,6 +365,13 @@ class WsRunHandler:
 
         finally:
             self._running = False
+            # Fecha socket de stdin
+            if self._stdin_socket:
+                try:
+                    self._stdin_socket.close()
+                except Exception:
+                    pass
+                self._stdin_socket = None
             from app import ACTIVE_CONTAINERS
             ACTIVE_CONTAINERS.dec()
             # Remove container
