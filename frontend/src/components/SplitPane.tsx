@@ -56,9 +56,9 @@ export function SplitPane({
   }, [isDragging, minLeftWidth, minRightWidth])
 
   return (
-    <div ref={containerRef} style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+    <div ref={containerRef} style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
       {/* Painel esquerdo */}
-      <div style={{ width: `${leftWidth}%`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ width: `${leftWidth}%`, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
         {children[0]}
       </div>
 
@@ -102,7 +102,7 @@ export function SplitPane({
       </div>
 
       {/* Painel direito */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
         {children[1]}
       </div>
     </div>

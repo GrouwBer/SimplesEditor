@@ -332,7 +332,7 @@ function AppContent() {
       {/* Main + Terminal: Split vertical */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Editor + NASM: SplitPane horizontal */}
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
           <SplitPane defaultLeftWidth={60} minLeftWidth={30} minRightWidth={20}>
             {/* Code Editor */}
             <section style={{
