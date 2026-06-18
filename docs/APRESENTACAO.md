@@ -10,7 +10,7 @@
 Plataforma Web para Ensino de Programacao com a Linguagem SIMPLES
 
 Equipe: GrouwBer, JoaoGarciaM, Jkvzin
-Disciplina: [nome] — Prof. [nome]
+Disciplina: [nome da disciplina] — Prof. [nome do professor]
 
 ---
 
@@ -107,7 +107,7 @@ Disciplina: [nome] — Prof. [nome]
 - `docker-stack`: docker compose build
 - `smoke`: compose up → healthcheck → tear down
 
-**Cobertura**: 27 PRs, 15+ issues fechadas
+**Cobertura**: 100+ PRs, 50+ issues fechadas
 
 ---
 
