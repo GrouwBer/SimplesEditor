@@ -109,4 +109,4 @@ fim
 - [ ] Testar audio do microfone
 - [ ] Gravar em 1080p
 - [ ] Salvar como `docs/demo.mp4`
-- [ ] Atualizar README.md com link para o video
+- [x] README.md link ja atualizado (PR #102/#43)
