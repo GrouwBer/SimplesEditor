@@ -336,10 +336,13 @@ class WsRunHandler:
 
             # Conecta socket de stdin para input interativo (leia)
             try:
-                sock = container.attach_socket(params={'stdin': 1, 'stream': 1})
+                sock = client.api.attach_socket(
+                    container.id,
+                    params={'stdin': 1, 'stream': 1}
+                )
                 self._stdin_socket = sock
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error("stdin_socket_error", error=str(e))
 
             # Streaming de logs em tempo real (stdout/stderr)
             try:
