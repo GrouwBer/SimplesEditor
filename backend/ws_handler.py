@@ -71,12 +71,14 @@ class WsRunHandler:
     def handle_stdin(self, data: str):
         """Envia dados para o stdin do processo em execucao."""
         with self._lock:
-            # Docker sandbox path (stdin via socket)
+            # Docker sandbox path (stdin via socket multiplexado)
             if self._stdin_socket:
                 try:
-                    import docker
-                    sock = self._stdin_socket
-                    sock.send(data.encode("utf-8"))
+                    encoded = data.encode("utf-8")
+                    # Formato multiplex do Docker: 8 bytes header + payload
+                    # header: [stream_type(1)][pad(3)][size(4 big-endian)]
+                    header = b'\x00\x00\x00\x00' + len(encoded).to_bytes(4, 'big')
+                    self._stdin_socket.sendall(header + encoded)
                 except Exception:
                     pass
             # Subprocess path (fallback)
