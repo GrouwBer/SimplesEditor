@@ -52,7 +52,7 @@ services:
       retries: 5
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - simples_tmp:/tmp/simples
+      - /tmp/simples:/tmp/simples
     depends_on:
       - runner_image_build
     restart: unless-stopped
@@ -65,5 +65,4 @@ services:
     command: ["true"]
     restart: "no"
 
-volumes:
-  simples_tmp:
+
