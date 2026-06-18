@@ -5,6 +5,8 @@ import { SIMPLES_LANGUAGE_ID, simplesMonarchTokens } from './simplesLang'
 import { AuthProvider, useAuth } from './AuthContext'
 import LoginPage from './pages/LoginPage'
 import { useExecution } from './hooks/useExecution'
+import { useTerminal } from './hooks/useTerminal'
+import Terminal from './components/Terminal'
 
 const DEFAULT_CODE = [
   'programa exemplo_soma',
@@ -59,7 +61,8 @@ function AppContent() {
 
   // WebSocket connection
   const wsRef = useRef<WebSocket | null>(null)
-  const { state, sendRun, sendStop, handleMessage } = useExecution(wsRef)
+  const { state, exitCode, durationMs, sendRun, sendStop, handleMessage } = useExecution(wsRef)
+  const { lines, appendOutput, sendStdin, clearTerminal } = useTerminal(wsRef)
 
   useEffect(() => {
     // Conecta WebSocket
@@ -78,6 +81,10 @@ function AppContent() {
         // Atualiza NASM output quando disponivel
         if (msg.asm) {
           setNasmOutput(msg.asm)
+        }
+        // Adiciona stdout/stderr ao terminal
+        if (msg.type === 'stdout' || msg.type === 'stderr') {
+          appendOutput(msg.data || '', msg.type as 'stdout' | 'stderr')
         }
       } catch (e) {
         console.error('[App] Erro ao processar mensagem WS:', e)
@@ -332,6 +339,21 @@ function AppContent() {
           </div>
         </aside>
       </main>
+
+      {/* Terminal */}
+      <div style={{
+        height: '200px',
+        flexShrink: 0,
+      }}>
+        <Terminal
+          lines={lines}
+          execState={state}
+          exitCode={exitCode}
+          durationMs={durationMs}
+          onSendStdin={sendStdin}
+          onClear={clearTerminal}
+        />
+      </div>
 
       {/* Footer */}
       <footer style={{
