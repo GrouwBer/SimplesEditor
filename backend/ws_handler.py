@@ -425,6 +425,6 @@ def register_websocket(app: Flask):
                         pass
 
         except Exception as e:
-            logger.error("ws_error", error=str(e))
+            logger.error("ws_error", error=str(e), type=type(e).__name__)
         finally:
             logger.info("ws_disconnected", path="/ws/run")

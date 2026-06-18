@@ -8,4 +8,15 @@ services:
       - ./nginx/http.conf:/etc/nginx/nginx.conf:ro
 
   backend:
-    command: gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 -b 0.0.0.0:5000 wsgi:app
+    command: flask run --host=0.0.0.0 --port=5000 --no-reload
+    environment:
+      - FLASK_APP=app.py
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+      - EXEC_TIMEOUT_S=10
+      - COMPILE_TIMEOUT_S=15
+      - MAX_CODE_KB=64
+      - RUNS_PER_MINUTE=30
+      - SANDBOX_IMAGE=simples-runner:latest
+      - LOG_LEVEL=INFO
