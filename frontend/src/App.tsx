@@ -62,6 +62,16 @@ function AppContent() {
   const [wsStatus, setWsStatus] = useState<string>('conectando...')
   const [wsColor, setWsColor] = useState<string>('#f59e0b')
   const [terminalHeight, setTerminalHeight] = useState(200)
+  const terminalHeightRef = useRef(terminalHeight) // ref para evitar stale closure no drag
+  const isDraggingRef = useRef(false)
+
+  // Mantem ref sincronizada com state
+  useEffect(() => {
+    terminalHeightRef.current = terminalHeight
+  }, [terminalHeight])
+
+  // Erro de compilacao para exibir no terminal
+  const [compileError, setCompileError] = useState<string | null>(null)
 
   // WebSocket connection
   const wsRef = useRef<WebSocket | null>(null)
@@ -108,6 +118,16 @@ function AppContent() {
           if (msg.asm) setNasmOutput(msg.asm)
           if (msg.type === 'stdout' || msg.type === 'stderr') {
             appendOutput(msg.data || '', msg.type as 'stdout' | 'stderr')
+          }
+          // Exibe erros de compilacao no terminal e limpa ao iniciar nova execucao
+          if (msg.type === 'compile_error' || msg.type === 'assemble_error' || msg.type === 'link_error') {
+            const errLine = msg.line ? `linha ${msg.line}` : ''
+            const errCol = msg.column ? `, coluna ${msg.column}` : ''
+            const location = errLine || errCol ? ` (${errLine}${errCol})` : ''
+            setCompileError(`[${msg.type}] ${msg.message || 'erro desconhecido'}${location}`)
+          }
+          if (msg.type === 'internal_error') {
+            setCompileError(`[Erro interno] ${msg.message || 'erro desconhecido'}`)
           }
         } catch (e) {
           console.error('[App] Erro ao processar mensagem WS:', e)
@@ -219,7 +239,7 @@ function AppContent() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {(state === 'idle' || state === 'finished') && (
             <button
-              onClick={() => wsStatus === 'conectado' && sendRun(code)}
+              onClick={() => { setCompileError(null); setNasmOutput(null); wsStatus === 'conectado' && sendRun(code) }}
               disabled={wsStatus !== 'conectado'}
               title={wsStatus !== 'conectado' ? `WebSocket ${wsStatus} — aguarde conectar` : 'Executar codigo'}
               style={{
@@ -394,17 +414,22 @@ function AppContent() {
           </SplitPane>
         </div>
 
-        {/* Divisor vertical do terminal */}
+        {/* Divisor vertical do terminal — arrastavel para redimensionar */}
         <div
           onMouseDown={(e) => {
             e.preventDefault()
+            e.stopPropagation()
+            isDraggingRef.current = true
             const startY = e.clientY
-            const startHeight = terminalHeight
+            const startHeight = terminalHeightRef.current
             const onMove = (ev: MouseEvent) => {
+              if (!isDraggingRef.current) return
               const delta = startY - ev.clientY
-              setTerminalHeight(Math.max(80, Math.min(500, startHeight + delta)))
+              const newHeight = Math.max(80, Math.min(window.innerHeight * 0.7, startHeight + delta))
+              setTerminalHeight(newHeight)
             }
             const onUp = () => {
+              isDraggingRef.current = false
               document.removeEventListener('mousemove', onMove)
               document.removeEventListener('mouseup', onUp)
               document.body.style.userSelect = ''
@@ -416,20 +441,27 @@ function AppContent() {
             document.body.style.cursor = 'row-resize'
           }}
           style={{
-            height: '8px',
+            height: '12px',
             cursor: 'row-resize',
-            backgroundColor: 'rgba(255, 255, 255, 0.04)',
+            backgroundColor: 'rgba(255, 255, 255, 0.03)',
             flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            transition: 'background-color 0.15s',
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99, 102, 241, 0.15)'
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255, 255, 255, 0.03)'
           }}
         >
           <div style={{
-            width: '40px',
-            height: '4px',
-            borderRadius: '2px',
-            backgroundColor: 'rgba(255, 255, 255, 0.12)',
+            width: '48px',
+            height: '5px',
+            borderRadius: '3px',
+            backgroundColor: 'rgba(255, 255, 255, 0.15)',
           }} />
         </div>
 
@@ -443,8 +475,9 @@ function AppContent() {
             execState={state}
             exitCode={exitCode}
             durationMs={durationMs}
+            compileError={compileError}
             onSendStdin={sendStdin}
-            onClear={clearTerminal}
+            onClear={() => { clearTerminal(); setCompileError(null) }}
           />
         </div>
       </div>

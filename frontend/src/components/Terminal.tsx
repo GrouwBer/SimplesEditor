@@ -11,6 +11,8 @@ interface TerminalProps {
   exitCode: number | null
   /** Duracao da ultima execucao em ms */
   durationMs: number | null
+  /** Mensagem de erro de compilacao (exibida no corpo do terminal) */
+  compileError: string | null
   /** Callback para enviar stdin ao backend */
   onSendStdin: (data: string) => boolean
   /** Callback para limpar o terminal */
@@ -29,6 +31,7 @@ const Terminal: FC<TerminalProps> = ({
   execState,
   exitCode,
   durationMs,
+  compileError,
   onSendStdin,
   onClear,
 }) => {
@@ -94,12 +97,31 @@ const Terminal: FC<TerminalProps> = ({
 
       {/* Area de output do terminal */}
       <div ref={scrollRef} style={styles.output}>
-        {lines.length === 0 && execState === 'idle' && (
+        {lines.length === 0 && execState === 'idle' && !compileError && (
           <div style={styles.emptyState}>
             <span style={styles.prompt}>$</span>
             <span style={styles.emptyText}>
               Aguardando execucao... Clique Run para compilar e executar.
             </span>
+          </div>
+        )}
+
+        {/* Exibicao de erro de compilacao */}
+        {compileError && (
+          <div style={{
+            padding: '0.5rem 0.75rem',
+            marginBottom: '0.5rem',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            borderLeft: '3px solid #ef4444',
+            borderRadius: '0 4px 4px 0',
+            fontSize: '0.8rem',
+            fontFamily: "'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace",
+            color: '#fca5a5',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+          }}>
+            <span style={{ fontWeight: 700, color: '#ef4444' }}>Erro: </span>
+            {compileError}
           </div>
         )}
 
