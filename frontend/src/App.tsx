@@ -69,56 +69,76 @@ function AppContent() {
   const { lines, appendOutput, sendStdin, clearTerminal } = useTerminal(wsRef)
 
   useEffect(() => {
-    // Conecta WebSocket
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const wsUrl = `${protocol}//${window.location.host}/ws/run`
-    const ws = new WebSocket(wsUrl)
+    let ws: WebSocket | null = null
+    let pingInterval: ReturnType<typeof setInterval> | null = null
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null
+    let mounted = true
 
-    ws.onopen = () => {
-      console.log('[App] WebSocket conectado')
-      setWsStatus('conectado')
-      setWsColor('#10b981')
-    }
+    const connect = () => {
+      if (!mounted) return
+      
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const wsUrl = `${protocol}//${window.location.host}/ws/run`
+      
+      setWsStatus('conectando...')
+      setWsColor('#f59e0b')
+      
+      ws = new WebSocket(wsUrl)
 
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data)
-        handleMessage(msg)
-        // Atualiza NASM output quando disponivel
-        if (msg.asm) {
-          setNasmOutput(msg.asm)
+      ws.onopen = () => {
+        if (!mounted) return
+        console.log('[App] WebSocket conectado')
+        setWsStatus('conectado')
+        setWsColor('#10b981')
+        wsRef.current = ws
+        
+        // Ping keepalive a cada 25s
+        pingInterval = setInterval(() => {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'ping' }))
+          }
+        }, 25000)
+      }
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data)
+          if (msg.type === 'pong') return
+          handleMessage(msg)
+          if (msg.asm) setNasmOutput(msg.asm)
+          if (msg.type === 'stdout' || msg.type === 'stderr') {
+            appendOutput(msg.data || '', msg.type as 'stdout' | 'stderr')
+          }
+        } catch (e) {
+          console.error('[App] Erro ao processar mensagem WS:', e)
         }
-        // Adiciona stdout/stderr ao terminal
-        if (msg.type === 'stdout' || msg.type === 'stderr') {
-          appendOutput(msg.data || '', msg.type as 'stdout' | 'stderr')
-        }
-      } catch (e) {
-        console.error('[App] Erro ao processar mensagem WS:', e)
+      }
+
+      ws.onclose = () => {
+        if (!mounted) return
+        console.log('[App] WebSocket desconectado — reconectando em 2s...')
+        if (pingInterval) { clearInterval(pingInterval); pingInterval = null }
+        wsRef.current = null
+        setWsStatus('reconectando...')
+        setWsColor('#f59e0b')
+        reconnectTimeout = setTimeout(connect, 2000)
+      }
+
+      ws.onerror = () => {
+        // onclose sempre dispara depois de onerror — nao precisa tratar aqui
       }
     }
 
-    ws.onclose = () => {
-      console.log('[App] WebSocket desconectado')
-      setWsStatus('desconectado')
-      setWsColor('#ef4444')
-    }
-
-    ws.onerror = () => {
-      setWsStatus('erro')
-      setWsColor('#ef4444')
-    }
-
-    wsRef.current = ws
+    connect()
 
     return () => {
-      try {
-        ws.close()
-      } catch (e) {
-        console.error('[App] Erro ao fechar WebSocket:', e)
-      }
+      mounted = false
+      if (pingInterval) clearInterval(pingInterval)
+      if (reconnectTimeout) clearTimeout(reconnectTimeout)
+      try { ws?.close() } catch (e) { /* ok */ }
       wsRef.current = null
     }
-  }, [handleMessage])
+  }, [appendOutput, handleMessage])
 
   useEffect(() => {
     fetch('/api/health')

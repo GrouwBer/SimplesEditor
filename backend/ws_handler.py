@@ -418,6 +418,12 @@ def register_websocket(app: Flask):
                 elif msg_type == "stop":
                     handler.handle_stop()
 
+                elif msg_type == "ping":
+                    try:
+                        ws.send(json.dumps({"type": "pong"}))
+                    except Exception:
+                        pass
+
         except Exception as e:
             logger.error("ws_error", error=str(e))
         finally:
