@@ -337,15 +337,10 @@ class WsRunHandler:
             self._container_id = container.id
 
             # Conecta stdin para input interativo (leia)
-            # Usa raw socket com multiplexed stream do Docker
             try:
-                sock = client.api.attach(
+                sock = client.api.attach_socket(
                     container.id,
-                    stdin=True,
-                    stdout=False,
-                    stderr=False,
-                    stream=True,
-                    logs=False,
+                    params={'stdin': 1, 'stream': 1}
                 )
                 self._stdin_socket = sock
             except Exception as e:
