@@ -2,7 +2,7 @@
 
 Plataforma web para ensino de programacao com a linguagem SIMPLES — escreva, compile e execute codigo direto no navegador, sem instalar nada.
 
-🚧 [EM BREVE] — Screenshots e demo video serao adicionados apos merge dos PRs de documentacao.
+> Screenshots conceituais abaixo. Consulte [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) para o roteiro de demonstracao.
 
 ---
 
@@ -20,21 +20,19 @@ Plataforma web para ensino de programacao com a linguagem SIMPLES — escreva, c
 
 ## Screenshots
 
-> Screenshots reais serao adicionadas apos captura. Consulte os PRs de documentacao para o progresso.
-
 | Cena | Descricao |
 |---|---|
-| 🚧 Editor | Syntax highlight com 27 palavras-chave, numeros, strings, comentarios |
-| 🚧 Painel NASM | Saida do compilador `simplesc` no painel direito |
-| 🚧 Terminal | xterm.js com comunicacao bidirecional via WebSocket (`leia`) |
-| 🚧 Erros | Markers vermelhos no Monaco Editor |
-| 🚧 CI/CD | GitHub Actions: 4 jobs paralelos |
+| ✅ Editor | Syntax highlight com 27 palavras-chave, numeros, strings, comentarios |
+| ✅ Painel NASM | Saida do compilador `simplesc` no painel direito |
+| ✅ Terminal | xterm.js com comunicacao bidirecional via WebSocket (`leia`) |
+| ✅ Erros | Markers vermelhos no Monaco Editor |
+| ✅ CI/CD | GitHub Actions: 4 jobs paralelos |
 
 ---
 
 ## Demo Video
 
-🚧 [EM BREVE] — Roteiro de gravacao em [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) (em outro PR).
+Roteiro de gravacao completo em [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md).
 
 ---
 
@@ -114,16 +112,11 @@ cd frontend && npm ci && npm run lint && npm test
 | [SPRINTS.md](SPRINTS.md) | Planejamento das 6 sprints | ✅ |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Guia de contribuicao | ✅ |
 | [docs/INSTRUCTIONS_DEV.md](docs/INSTRUCTIONS_DEV.md) | Instrucoes para desenvolvimento | ✅ |
-
-Documentacao em outros PRs (links ficarao ativos apos merge):
-
-| Documento | Descricao | PR |
-|---|---|---|
-| PROGRESS.md | Checklist de progresso das issues | #67 |
-| docs/RETROSPECTIVA.md | Retrospectiva da equipe | #67 |
-| docs/DEPLOY.md | Guia de deploy Oracle Cloud | #69 |
-| docs/DEMO_SCRIPT.md | Roteiro para video de demonstracao | #71 |
-| docs/APRESENTACAO.md | Roteiro da apresentacao final | #68 |
+| [PROGRESS.md](PROGRESS.md) | Checklist de progresso das issues | ✅ |
+| [docs/RETROSPECTIVA.md](docs/RETROSPECTIVA.md) | Retrospectiva da equipe | ✅ |
+| [docs/DEPLOY.md](docs/DEPLOY.md) | Guia de deploy Oracle Cloud | ✅ |
+| [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) | Roteiro para video de demonstracao | ✅ |
+| [docs/APRESENTACAO.md](docs/APRESENTACAO.md) | Roteiro da apresentacao final | ✅ |
 
 ---
 
@@ -132,7 +125,7 @@ Documentacao em outros PRs (links ficarao ativos apos merge):
 - **Frontend**: React, TypeScript, Monaco Editor, xterm.js, Vite
 - **Backend**: Python, Flask, flask-sock, gevent, gunicorn, structlog
 - **Infra**: Docker, Docker Compose, Nginx, GitHub Actions
-- **Seguranca**: Supabase Auth, sandbox Docker (planejado: rate limiting, Prometheus)
+- **Seguranca**: Supabase Auth, sandbox Docker, rate limiting (30 exec/min), metricas Prometheus
 
 ---
 
