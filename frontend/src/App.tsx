@@ -443,18 +443,20 @@ function AppContent() {
           style={{
             height: '12px',
             cursor: 'row-resize',
-            backgroundColor: 'rgba(255, 255, 255, 0.03)',
+            backgroundColor: 'rgba(255, 255, 255, 0.06)',
             flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             transition: 'background-color 0.15s',
+            position: 'relative',
+            zIndex: 10,
           }}
           onMouseEnter={e => {
             (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99, 102, 241, 0.15)'
           }}
           onMouseLeave={e => {
-            (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255, 255, 255, 0.03)'
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255, 255, 255, 0.06)'
           }}
         >
           <div style={{
